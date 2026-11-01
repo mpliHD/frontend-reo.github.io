@@ -1,0 +1,32 @@
+SITE COMPLETO: pronto para subir no GitHub (mpliHD/frontend-reo.github.io)
+
+O site ja esta compilado: o index.html aponta para dist/assets/index-BN8Zc042.js.
+Nao precisa rodar build nem npm install para publicar.
+
+OPCAO A: pelo site do GitHub (sem instalar nada)
+ 1. Extraia este zip no computador.
+ 2. No repositorio, clique em "Add file" > "Upload files" e arraste TUDO que esta dentro
+    da pasta extraida (index.html, app.html, package.json, package-lock.json, vite.config.js,
+    README.md, .gitignore, e as pastas src, scripts e dist). Confirme as substituicoes.
+ 3. Apague os bundles antigos em dist/assets. No repositorio, abra a pasta dist/assets: o UNICO
+    arquivo que deve ficar e index-BN8Zc042.js. Se houver outro index-XXXX.js (por exemplo
+    index-CTgBvPDl.js ou index-DzfXX0oe.js), abra-o, clique no icone de lixeira (Delete file) e
+    confirme o commit.
+ 4. Faca o commit. O GitHub Pages atualiza sozinho em alguns minutos. Abra o site com Ctrl+F5.
+
+OPCAO B: pelo git, no terminal
+    (copie o conteudo deste zip por cima da pasta do repositorio)
+    git rm --cached dist/assets/index-CTgBvPDl.js      (se ainda existir)
+    git add -A
+    git commit -m "Abas de dormentes, exportacao para Excel e ajustes do painel"
+    git push
+
+OBSERVACOES
+ - Os caminhos do site sao relativos, entao ele funciona em qualquer endereco do Pages
+   (inclusive depois da renomeacao do repositorio).
+ - A pasta node_modules NAO vai neste zip e nao deve ir para o GitHub. O .gitignore ja
+   a ignora. Se o repositorio ainda tiver node_modules versionado, para tirar (opcional):
+       git rm -r --cached node_modules
+       git commit -m "Remove node_modules do versionamento"
+ - Para desenvolver no computador: npm install, depois npm run dev (mostra tambem as abas
+   de desenvolvedor). Para gerar uma nova versao: npm run publicar, depois commit e push.
