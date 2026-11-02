@@ -22,6 +22,8 @@ import {
 import writeXlsxFile from "write-excel-file/universal";
 // Endereço da API e modo demonstração (ver src/config.js).
 import { API_URL, MODO_DEMO } from "./config.js";
+import { api } from "./api/index.js";
+import { PAPEIS, podeVerAba, rotuloPapel, usuarioDaApi } from "./papeis.js";
 
 // APIS pra INTEGRAÇÃO
 // Guarda a URL base e a chave de API num Context do React, em vez de cada
@@ -115,9 +117,9 @@ function BrandMark({ size = 30 }) {
 //   tratado à parte, na aba Operação de Campo, porque usa imagem em vez de
 //   leitor.
 // OPERACOES: os 4 tipos de registro que o técnico pode lançar em campo.
-// TECNICO: representa a pessoa atualmente logada (nome, matrícula, papel)
-//  hoje é fixo, mas seria substituído pelos dados devolvidos pelo login.
-// LOGIN_DEMO: usuário e senha aceitos na tela de login deste protótipo.
+// USUARIO_DEMO: a pessoa "logada" no modo demonstração (nome, matrícula,
+//  papel). Com a API, o usuário vem do login / GET /auth/me.
+// LOGIN_DEMO: usuário e senha aceitos na tela de login do modo demonstração.
 const ITENS = [
   { id: "BAT-01", nome: "Batente", setor: "Via Permanente" },
   { id: "DOR-02", nome: "Dormente", setor: "Via Permanente" },
@@ -139,7 +141,7 @@ const OPERACOES = [
   { key: "ocorrencia", label: "Ocorrência", icon: AlertTriangle },
 ];
 
-const TECNICO = { nome: "Ana Giulia", matricula: "CPTM-4471", turno: "Tarde · Pátio Barra Funda", papel: "Admin" };
+const USUARIO_DEMO = { id: "demo", nome: "Ana Giulia", matricula: "CPTM-4471", email: "", papel: "admin" };
 const LOGIN_DEMO = { usuario: "Admin", senha: "Senha123" };
 
 // FUNÇÕES UTILITÁRIAS
@@ -204,21 +206,33 @@ function Label({ children, tone }) {
 }
 
 // LOGIN
-// Tela de autenticação em duas etapas: 1) usuário/senha, 2) código MFA.
+// Com a API: matrícula ou e-mail + senha em POST /auth/login. A fase 1 da API
+// não tem MFA (/auth/mfa responde 501), então a etapa 2 só aparece no modo
+// demonstração. TODO(decidir): MFA por TOTP ou por código no e-mail (CONTEXTO.md).
+// No modo demonstração: 1) usuário/senha de LOGIN_DEMO, 2) código MFA fictício.
 // LOGIN_TIPS são as dicas que giram sozinhas no painel vermelho da esquerda (PODEMOS AJUSTAR)
 const LOGIN_TIPS = [
   { icon: WifiOff, text: "Perdeu a conexão em campo? O sistema continua registrando tudo localmente e sincroniza sozinho quando a rede voltar." },
   { icon: ScanLine, text: "Cada dormente é identificado por RFID, então estoque, pedidos e chegadas ficam rastreáveis do início ao fim." },
-  { icon: ShieldAlert, text: "Cada pessoa entra com um nível de acesso: Operador, Analista ou Admin." },
+  { icon: ShieldAlert, text: "Cada pessoa entra com um nível de acesso: Operador, Técnico, Especialista, Supervisor ou Admin." },
   { icon: RefreshCw, text: "Credenciais offline ficam válidas por 48h, tempo suficiente para um turno inteiro em campo." },
 ];
 
-function LoginScreen({ online, onSuccess }) {
+// Mensagem para cada `code` de erro que o login pode receber da API.
+function mensagemErroLogin(erro) {
+  if (erro.code === "invalid_credentials") return "Matrícula/e-mail ou senha inválidos.";
+  if (erro.code === "inactive_user") return "Este usuário está desativado. Fale com o administrador.";
+  if (erro.code === "validation_error") return "Preencha a matrícula (ou e-mail) e a senha.";
+  return erro.detail || "Não foi possível entrar. Tente de novo.";
+}
+
+function LoginScreen({ online, onSuccess, aviso }) {
   const [stage, setStage] = useState("credentials"); // "credentials" = etapa 1, "mfa" = etapa 2
   const [user, setUser] = useState("");
   const [pass, setPass] = useState("");
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
+  const [entrando, setEntrando] = useState(false);
   const [tipIndex, setTipIndex] = useState(0);
   const width = useViewport();
   // Condição: só mostra o painel visual vermelho (com as dicas) se a tela
@@ -234,9 +248,22 @@ function LoginScreen({ online, onSuccess }) {
     return () => clearInterval(t);
   }, []);
 
-  const submitCreds = (e) => {
+  const submitCreds = async (e) => {
     e.preventDefault();
-    // Condição: usuário (sem diferenciar maiúsculas/minúsculas) e senha
+    if (!MODO_DEMO) {
+      if (entrando) return; // evita dois logins com Enter + clique
+      setError("");
+      setEntrando(true);
+      try {
+        const u = await api.entrar(user.trim(), pass);
+        onSuccess(usuarioDaApi(u));
+      } catch (erro) {
+        setError(mensagemErroLogin(erro));
+        setEntrando(false);
+      }
+      return;
+    }
+    // Modo demonstração. Condição: usuário (sem diferenciar maiúsculas/minúsculas) e senha
     // precisam bater exatamente com LOGIN_DEMO. Se qualquer um dos dois
     // estiver errado, mostra erro e não avança de etapa.
     if (user.trim().toLowerCase() !== LOGIN_DEMO.usuario.toLowerCase() || pass.trim() !== LOGIN_DEMO.senha) {
@@ -252,7 +279,7 @@ function LoginScreen({ online, onSuccess }) {
     // Condição: neste protótipo, qualquer código com 4 ou mais dígitos é
     // aceito (não existe um servidor de verdade validando o código... ainda).
     if (code.trim().length < 4) { setError("Código inválido — informe pelo menos 4 dígitos."); return; }
-    onSuccess();
+    onSuccess(USUARIO_DEMO);
   };
 
   const TipIcon = LOGIN_TIPS[tipIndex].icon;
@@ -304,7 +331,7 @@ function LoginScreen({ online, onSuccess }) {
           </div>
 
           <div style={{ position: "relative", zIndex: 1, fontFamily: FONT_MONO, fontSize: 10, opacity: 0.7 }}>
-            Protótipo acadêmico · dados fictícios
+            {MODO_DEMO ? "Protótipo acadêmico · dados fictícios" : "Protótipo acadêmico"}
           </div>
         </div>
       )}
@@ -322,15 +349,26 @@ function LoginScreen({ online, onSuccess }) {
           )}
 
           <FaixaDemo style={{ border: "1px solid #f0ddb8", borderRadius: 4, marginBottom: 12 }} />
+          {aviso && (
+            <div role="alert" style={{ background: COLOR.amberTint, border: "1px solid #f0ddb8", color: COLOR.amber, borderRadius: 4, padding: "8px 12px", fontSize: 12, marginBottom: 12 }}>
+              {aviso}
+            </div>
+          )}
           <Panel style={{ padding: 28 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-              <StepDot active={stage === "credentials"} done={stage === "mfa"} label="1" />
-              <div style={{ flex: 1, height: 2, background: stage === "mfa" ? COLOR.red : COLOR.line, borderRadius: 99, transition: "background .3s" }} />
-              <StepDot active={stage === "mfa"} done={false} label="2" />
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontFamily: FONT_MONO, fontSize: 9.5, color: COLOR.textFaint, marginBottom: 20 }}>
-              <span>CREDENCIAIS</span><span>MFA</span>
-            </div>
+            {/* Indicador das 2 etapas (credenciais → MFA): só no modo demonstração,
+                porque com a API o login ainda é de uma etapa só. */}
+            {MODO_DEMO && (
+              <>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                  <StepDot active={stage === "credentials"} done={stage === "mfa"} label="1" />
+                  <div style={{ flex: 1, height: 2, background: stage === "mfa" ? COLOR.red : COLOR.line, borderRadius: 99, transition: "background .3s" }} />
+                  <StepDot active={stage === "mfa"} done={false} label="2" />
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontFamily: FONT_MONO, fontSize: 9.5, color: COLOR.textFaint, marginBottom: 20 }}>
+                  <span>CREDENCIAIS</span><span>MFA</span>
+                </div>
+              </>
+            )}
 
             <div key={stage} style={{ animation: "slide-in .25s ease" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }}>
@@ -339,7 +377,7 @@ function LoginScreen({ online, onSuccess }) {
                   ? <Lock size={15} color={COLOR.red} />
                   : <ShieldCheck size={15} color={COLOR.red} />}
                 <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 600, fontSize: 15 }}>
-                  {stage === "credentials" ? "Acesso do técnico" : "Autenticação de dois fatores"}
+                  {stage === "credentials" ? "Acesso ao sistema" : "Autenticação de dois fatores"}
                 </span>
               </div>
 
@@ -347,10 +385,21 @@ function LoginScreen({ online, onSuccess }) {
                   senha OU o de MFA, nunca os dois juntos. */}
               {stage === "credentials" ? (
                 <div onKeyDown={(e) => e.key === "Enter" && submitCreds(e)} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  <Field label="Usuário" value={user} onChange={setUser} placeholder="Admin" />
-                  <Field label="Senha" value={pass} onChange={setPass} placeholder="Senha123" type="password" />
-                  {error && <div style={{ color: COLOR.red, fontSize: 12.5 }}>{error}</div>}
-                  <Btn onClick={submitCreds} full>Entrar<ChevronRight size={15} /></Btn>
+                  {MODO_DEMO ? (
+                    <>
+                      <Field label="Usuário" value={user} onChange={setUser} placeholder="Admin" />
+                      <Field label="Senha" value={pass} onChange={setPass} placeholder="Senha123" type="password" />
+                    </>
+                  ) : (
+                    <>
+                      <Field label="Matrícula ou e-mail" value={user} onChange={setUser} placeholder="RL-8842 ou nome@cptm.sp.gov.br" />
+                      <Field label="Senha" value={pass} onChange={setPass} placeholder="Sua senha" type="password" />
+                    </>
+                  )}
+                  {error && <div role="alert" style={{ color: COLOR.red, fontSize: 12.5 }}>{error}</div>}
+                  <Btn onClick={submitCreds} full>
+                    {entrando ? <><Loader2 size={15} className="spin" />Entrando…</> : <>Entrar<ChevronRight size={15} /></>}
+                  </Btn>
                 </div>
               ) : (
                 <div onKeyDown={(e) => e.key === "Enter" && submitMfa(e)} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -376,9 +425,11 @@ function LoginScreen({ online, onSuccess }) {
               )}
             </div>
           </Panel>
-          <div style={{ textAlign: "center", marginTop: 14, fontFamily: FONT_MONO, fontSize: 10.5, color: COLOR.textFaint }}>
-            login de teste: <b style={{ color: COLOR.textDim }}>{LOGIN_DEMO.usuario} / {LOGIN_DEMO.senha}</b> · qualquer código de 4+ dígitos no MFA
-          </div>
+          {MODO_DEMO && (
+            <div style={{ textAlign: "center", marginTop: 14, fontFamily: FONT_MONO, fontSize: 10.5, color: COLOR.textFaint }}>
+              login de teste: <b style={{ color: COLOR.textDim }}>{LOGIN_DEMO.usuario} / {LOGIN_DEMO.senha}</b> · qualquer código de 4+ dígitos no MFA
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -529,7 +580,7 @@ const ENDPOINTS = [
   { method: "GET", path: "/usuarios", desc: "Lista usuários e seus papéis" },
   { method: "POST", path: "/usuarios", desc: "Cria usuário (Admin)" },
   { method: "PATCH", path: "/usuarios/:id/papel", desc: "Eleva/altera o papel do usuário (Admin)" },
-  { method: "POST", path: "/usuarios/convite", desc: "Gera convite por e-mail (Admin/Analista)" },
+  { method: "POST", path: "/usuarios/convite", desc: "Gera convite por e-mail (Admin)" },
   { method: "POST", path: "/estoque/movimentacao", desc: "Registrar entrada / saída / transferência de itens" },
   { method: "POST", path: "/estoque/inventario", desc: "Registrar contagem / conferência de inventário" },
   { method: "POST", path: "/estoque/localizacao", desc: "Registrar posicionamento de itens no armazém" },
@@ -1197,9 +1248,37 @@ function VisaoDormentes({ visao, onLog }) {
 // enquanto screen === "login", mostra só a tela de login (SIMPLES MAS FUNCIONA); depois que o
 // login dá certo, mostra o layout com menu lateral + conteúdo da aba ativa.
 export default function App() {
-  const [screen, setScreen] = useState("login");
+  // Condição: com API e tokens guardados (ex.: depois de um F5), começa em
+  // "carregando" e confirma a sessão em GET /auth/me; senão vai direto ao login.
+  const [screen, setScreen] = useState(!MODO_DEMO && api.estaLogado() ? "carregando" : "login");
+  const [usuario, setUsuario] = useState(null); // { id, nome, matricula, email, papel }
+  const [avisoLogin, setAvisoLogin] = useState("");
   const [online, setOnline] = useState(true);
   const [tab, setTab] = useState(NAV[0].key); // abre na primeira aba do menu
+
+  // Menu só com as abas que o papel logado pode abrir (a API daria 403 nas outras).
+  const navVisivel = NAV.filter((n) => podeVerAba(n.key, usuario?.papel));
+  const abaAtual = navVisivel.some((n) => n.key === tab) ? tab : navVisivel[0]?.key;
+
+  useEffect(() => {
+    if (MODO_DEMO) return undefined;
+    // Sessão perdida (token inválido ou refresh vencido): volta ao login com aviso.
+    const cancelar = api.aoPerderSessao(() => {
+      setUsuario(null);
+      setScreen("login");
+      setAvisoLogin("Sua sessão expirou. Entre novamente.");
+    });
+    if (api.estaLogado()) {
+      api.get("/auth/me")
+        .then((u) => { setUsuario(usuarioDaApi(u)); setScreen("app"); })
+        .catch((erro) => {
+          // 401 já foi tratado por aoPerderSessao; aqui sobra rede/servidor fora.
+          if (erro.status !== 401) setAvisoLogin(erro.detail);
+          setScreen("login");
+        });
+    }
+    return cancelar;
+  }, []);
 
   const width = useViewport();
   // Condição: abaixo de 860px consideramos "celular" — nessa largura o menu
@@ -1240,13 +1319,27 @@ export default function App() {
   const credMsLeft = credExpiresAt - now;
   const credHoursLeft = Math.max(0, credMsLeft / 3600000);
 
-  function pushLog(acao, status = "ok") {
-    setLogs((l) => [{ id: uid(), acao, status, ator: TECNICO.nome, time: new Date() }, ...l].slice(0, 60));
+  function pushLog(acao, status = "ok", ator = usuario?.nome) {
+    setLogs((l) => [{ id: uid(), acao, status, ator, time: new Date() }, ...l].slice(0, 60));
   }
 
-  function handleLoginSuccess() {
-    pushLog("Login + MFA validado (" + (online ? "online via servidor" : "offline via credenciais locais") + ")");
+  function handleLoginSuccess(u) {
+    setUsuario(u);
+    setAvisoLogin("");
+    pushLog(
+      MODO_DEMO
+        ? "Login + MFA validado (" + (online ? "online via servidor" : "offline via credenciais locais") + ")"
+        : "Login validado pela API",
+      "ok",
+      u.nome,
+    );
     setScreen("app");
+  }
+
+  function sair() {
+    api.sair();
+    setUsuario(null);
+    setScreen("login");
   }
 
   function handleNovoRegistro(reg) {
@@ -1294,7 +1387,15 @@ export default function App() {
 
   // Enquanto não fez login, a tela inteira é só o LoginScreen, nada do
   // layout com menu lateral é montado.
-  if (screen === "login") return <LoginScreen online={online} onSuccess={handleLoginSuccess} />;
+  if (screen === "login") return <LoginScreen online={online} onSuccess={handleLoginSuccess} aviso={avisoLogin} />;
+  if (screen === "carregando") {
+    return (
+      <div className="app-shell" style={{ background: COLOR.bg, color: COLOR.textDim, fontFamily: FONT_BODY, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 13 }}>
+        <FontLoader />
+        <Loader2 size={16} className="spin" /> Conferindo sua sessão…
+      </div>
+    );
+  }
 
   // MENU LATERAL: cálculo de largura e se mostra o texto ao lado dos ícones
   // Em celular, a gaveta sempre tem a largura cheia (236px) quando aberta.
@@ -1320,9 +1421,9 @@ export default function App() {
       </div>
 
       <div style={{ padding: 10, display: "flex", flexDirection: "column", gap: 2, flex: 1, minHeight: 0, overflowY: "auto" }}>
-        {NAV.map((n) => {
+        {navVisivel.map((n) => {
           const Icon = n.icon;
-          const activeSel = tab === n.key;
+          const activeSel = abaAtual === n.key;
           return (
             <button
               key={n.key}
@@ -1351,15 +1452,15 @@ export default function App() {
       <div style={{ padding: showLabels ? 14 : "14px 4px", borderTop: `1px solid ${COLOR.line}` }}>
         {showLabels ? (
           <>
-            <div style={{ fontSize: 12, fontWeight: 600 }}>{TECNICO.nome}</div>
-            <div style={{ fontFamily: FONT_MONO, fontSize: 10, color: COLOR.textDim, marginBottom: 3 }}>{TECNICO.matricula}</div>
+            <div style={{ fontSize: 12, fontWeight: 600 }}>{usuario.nome}</div>
+            <div style={{ fontFamily: FONT_MONO, fontSize: 10, color: COLOR.textDim, marginBottom: 3 }}>{usuario.matricula}</div>
             <div style={{ marginBottom: 10 }}>
-              <span style={{ fontFamily: FONT_MONO, fontSize: 9.5, padding: "1px 7px", borderRadius: 99, background: roleColor(TECNICO.papel).bg, color: roleColor(TECNICO.papel).fg }}>{TECNICO.papel.toUpperCase()}</span>
+              <span style={{ fontFamily: FONT_MONO, fontSize: 9.5, padding: "1px 7px", borderRadius: 99, background: roleColor(usuario.papel).bg, color: roleColor(usuario.papel).fg }}>{rotuloPapel(usuario.papel).toUpperCase()}</span>
             </div>
-            <Btn variant="ghost" small full onClick={() => setScreen("login")}><LogOut size={13} />Sair</Btn>
+            <Btn variant="ghost" small full onClick={sair}><LogOut size={13} />Sair</Btn>
           </>
         ) : (
-          <button onClick={() => setScreen("login")} title="Sair" style={{ width: "100%", display: "flex", justifyContent: "center", background: "none", border: "none", cursor: "pointer", color: COLOR.textDim, padding: "8px 0" }}>
+          <button onClick={sair} title="Sair" style={{ width: "100%", display: "flex", justifyContent: "center", background: "none", border: "none", cursor: "pointer", color: COLOR.textDim, padding: "8px 0" }}>
             <LogOut size={15} />
           </button>
         )}
@@ -1416,7 +1517,7 @@ export default function App() {
               <Menu size={16} />
             </button>
             <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 600, fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              {NAV.find((n) => n.key === tab)?.label}
+              {NAV.find((n) => n.key === abaAtual)?.label}
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
@@ -1443,24 +1544,24 @@ export default function App() {
             aba atual (`tab`); as outras nem chegam a ser montadas. */}
         <div style={{ flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch", padding: isMobile ? 14 : 22 }}>
           {/* Abas de dormentes: as 3 visões usam o mesmo componente, só muda a descrição da visão */}
-          {tab === "dormentes_estoque" && <VisaoDormentes key="estoque" visao={VISAO_ESTOQUE} onLog={pushLog} />}
-          {tab === "dormentes_pedido" && <VisaoDormentes key="pedido" visao={VISAO_PEDIDO} onLog={pushLog} />}
-          {tab === "dormentes_chegada" && <VisaoDormentes key="chegada" visao={VISAO_CHEGADA} onLog={pushLog} />}
+          {abaAtual === "dormentes_estoque" && <VisaoDormentes key="estoque" visao={VISAO_ESTOQUE} onLog={pushLog} />}
+          {abaAtual === "dormentes_pedido" && <VisaoDormentes key="pedido" visao={VISAO_PEDIDO} onLog={pushLog} />}
+          {abaAtual === "dormentes_chegada" && <VisaoDormentes key="chegada" visao={VISAO_CHEGADA} onLog={pushLog} />}
           {/* Abas de desenvolvedor: só existem com MOSTRAR_ABAS_DEV (ver MODO DESENVOLVEDOR) */}
-          {MOSTRAR_ABAS_DEV && tab === "operacao" && (
+          {MOSTRAR_ABAS_DEV && abaAtual === "operacao" && (
             <OperacaoTab online={online} onNovoRegistro={handleNovoRegistro} records={records} />
           )}
-          {tab === "dashboard" && (
+          {abaAtual === "dashboard" && (
             <DashboardTab records={records} pending={pending} logs={logs} alerts={ALERTAS_DORMENTES} online={online} />
           )}
-          {MOSTRAR_ABAS_DEV && tab === "sync" && (
+          {MOSTRAR_ABAS_DEV && abaAtual === "sync" && (
             <SyncTab online={online} pending={pending} lastSync={lastSync} onSync={handleSincronizarAgora}
               credExpiresAt={credExpiresAt} credHoursLeft={credHoursLeft} />
           )}
-          {MOSTRAR_ABAS_DEV && tab === "api" && <ApiTab online={online} />}
-          {tab === "usuarios" && <UsersTab />}
-          {tab === "chamados" && <ChamadosTab />}
-          {tab === "logs" && <LogsTab logs={logs} />}
+          {MOSTRAR_ABAS_DEV && abaAtual === "api" && <ApiTab online={online} />}
+          {abaAtual === "usuarios" && <UsersTab />}
+          {abaAtual === "chamados" && <ChamadosTab usuario={usuario} />}
+          {abaAtual === "logs" && <LogsTab logs={logs} />}
         </div>
       </div>
     </div>
@@ -2026,20 +2127,21 @@ function ApiTab({ online }) {
 }
 
 // USUÁRIOS
-// Tudo relacionado à governança de acesso: os 3 papéis do sistema
-// (ROLES), a cor de cada papel (roleColor), o convite por e-mail
+// Tudo relacionado à governança de acesso: os 5 papéis da API (PAPEIS, em
+// src/papeis.js), a cor de cada papel (roleColor), o convite por e-mail
 // (InviteSection) e a tela de cadastro/lista de usuários (UsersTab).
 //
-// roleColor: encadeamento de condições, Admin é vermelho, Analista é
-// azul, e qualquer outro papel (hoje só "Operador") cai no verde do
-// `return´ final.
-const ROLES = ["Operador", "Analista", "Admin"];
-
+// roleColor: admin é vermelho, supervisor (gestão) é azul, especialista
+// e técnico (inspeção) são âmbar e verde; operador cai no neutro do `return` final.
 function roleColor(papel) {
-  if (papel === "Admin") return { bg: COLOR.redTint, fg: COLOR.red };
-  if (papel === "Analista") return { bg: COLOR.blueTint, fg: COLOR.blue };
-  return { bg: COLOR.greenTint, fg: COLOR.green };
+  if (papel === "admin") return { bg: COLOR.redTint, fg: COLOR.red };
+  if (papel === "supervisor") return { bg: COLOR.blueTint, fg: COLOR.blue };
+  if (papel === "especialista") return { bg: COLOR.amberTint, fg: COLOR.amber };
+  if (papel === "tecnico") return { bg: COLOR.greenTint, fg: COLOR.green };
+  return { bg: COLOR.panelAlt, fg: COLOR.textDim };
 }
+
+const OPCOES_PAPEL = PAPEIS.map((p) => <option key={p.valor} value={p.valor}>{p.rotulo}</option>);
 
 // Expressão regular simples para validar formato de e-mail (algo@algo.algo)
 // antes de tentar enviar o convite — não garante que o e-mail existe de
@@ -2057,7 +2159,7 @@ function InviteSection() {
   const { baseUrl } = React.useContext(IntegrationContext);
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
-  const [papel, setPapel] = useState("Operador");
+  const [papel, setPapel] = useState("operador");
   const [erro, setErro] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [convites, setConvites] = useState([]);
@@ -2102,7 +2204,7 @@ function InviteSection() {
     if (!enviadoPelaApi) {
       const assunto = encodeURIComponent("Convite de acesso — CPTM · Monitoramento Logístico de Armazém");
       const corpo = encodeURIComponent(
-        `Olá, ${nome}!\n\nVocê foi convidado(a) a acessar o sistema de Monitoramento Logístico de Armazém da CPTM, com o perfil de ${papel}.\n\nAcesse pelo link abaixo para confirmar seu cadastro:\n${link}\n\nSe você não esperava este convite, pode ignorar esta mensagem.`
+        `Olá, ${nome}!\n\nVocê foi convidado(a) a acessar o sistema de Monitoramento Logístico de Armazém da CPTM, com o perfil de ${rotuloPapel(papel)}.\n\nAcesse pelo link abaixo para confirmar seu cadastro:\n${link}\n\nSe você não esperava este convite, pode ignorar esta mensagem.`
       );
       window.open(`mailto:${email.trim()}?subject=${assunto}&body=${corpo}`, "_self");
     }
@@ -2133,7 +2235,7 @@ function InviteSection() {
         <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <Label>PAPEL</Label>
           <select value={papel} onChange={(e) => setPapel(e.target.value)} style={selectStyle}>
-            {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+            {OPCOES_PAPEL}
           </select>
         </label>
       </div>
@@ -2154,7 +2256,7 @@ function InviteSection() {
               <div key={c.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "9px 11px", background: COLOR.panelAlt, borderRadius: 4, border: `1px solid ${COLOR.line}`, flexWrap: "wrap" }}>
                 <div style={{ fontSize: 12.5 }}>
                   {c.nome} <span style={{ color: COLOR.textFaint }}>· {c.email}</span>{" "}
-                  <span style={{ fontFamily: FONT_MONO, fontSize: 9.5, padding: "1px 6px", borderRadius: 99, background: rc.bg, color: rc.fg }}>{c.papel.toUpperCase()}</span>
+                  <span style={{ fontFamily: FONT_MONO, fontSize: 9.5, padding: "1px 6px", borderRadius: 99, background: rc.bg, color: rc.fg }}>{rotuloPapel(c.papel).toUpperCase()}</span>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <span style={{ fontFamily: FONT_MONO, fontSize: 9.5, color: COLOR.textFaint }}>{c.via === "api" ? "enviado via API" : "aberto no e-mail"} · {fmtShort(c.time)}</span>
@@ -2178,13 +2280,14 @@ function InviteSection() {
 // direto no `<select>` da linha, quando a elevação de cargo acontece.
 function UsersTab() {
   const [users, setUsers] = useState([
-    { id: uid(), nome: "Ana Giulia", usuario: "ana.giulia", papel: "Admin" },
-    { id: uid(), nome: "Fernanda Rocha", usuario: "fernanda.rocha", papel: "Operador" },
-    { id: uid(), nome: "Marcos Vinícius", usuario: "marcos.vinicius", papel: "Analista" },
+    { id: uid(), nome: "Ana Giulia", usuario: "ana.giulia", papel: "admin" },
+    { id: uid(), nome: "Fernanda Rocha", usuario: "fernanda.rocha", papel: "operador" },
+    { id: uid(), nome: "Marcos Vinícius", usuario: "marcos.vinicius", papel: "supervisor" },
+    { id: uid(), nome: "Rafael Souza", usuario: "rafael.souza", papel: "tecnico" },
   ]);
   const [nome, setNome] = useState("");
   const [usuario, setUsuario] = useState("");
-  const [papel, setPapel] = useState("Operador");
+  const [papel, setPapel] = useState("operador");
 
   function adicionar() {
     // Condição: exige nome e usuário preenchidos; se qualquer um estiver
@@ -2193,7 +2296,7 @@ function UsersTab() {
     // de verdade no backend, ver POST /usuarios).
     if (!nome.trim() || !usuario.trim()) return;
     setUsers((u) => [...u, { id: uid(), nome, usuario, papel }]);
-    setNome(""); setUsuario(""); setPapel("Operador");
+    setNome(""); setUsuario(""); setPapel("operador");
   }
   // GOVERNANÇA DE PERFIS — troca de papel
   // Percorre a lista de usuários e substitui o `papel` só do usuário com o
@@ -2222,7 +2325,7 @@ function UsersTab() {
           <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <Label>PAPEL</Label>
             <select value={papel} onChange={(e) => setPapel(e.target.value)} style={selectStyle}>
-              {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+              {OPCOES_PAPEL}
             </select>
           </label>
         </div>
@@ -2232,7 +2335,7 @@ function UsersTab() {
       <InviteSection />
 
       <Panel>
-        <SectionTitle icon={ShieldAlert} title="Usuários e níveis de acesso" sub="Operador · Analista · Admin — a elevação de cargo é feita direto na tabela" />
+        <SectionTitle icon={ShieldAlert} title="Usuários e níveis de acesso" sub="Operador · Técnico · Especialista · Supervisor · Admin — a elevação de cargo é feita direto na tabela" />
         <div style={{ overflowX: "auto" }}>
           <table>
             <thead>
@@ -2251,7 +2354,7 @@ function UsersTab() {
                     <td style={{ padding: "7px 10px", fontSize: 12.5, borderBottom: `1px solid ${COLOR.line}`, fontFamily: FONT_MONO, whiteSpace: "nowrap" }}>{u.usuario}</td>
                     <td style={{ padding: "7px 10px", borderBottom: `1px solid ${COLOR.line}` }}>
                       <select value={u.papel} onChange={(e) => mudarPapel(u.id, e.target.value)} style={{ ...selectStyle, padding: "4px 8px", fontSize: 11.5, background: rc.bg, color: rc.fg, border: `1px solid ${rc.fg}33` }}>
-                        {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+                        {OPCOES_PAPEL}
                       </select>
                     </td>
                     <td style={{ padding: "7px 10px", borderBottom: `1px solid ${COLOR.line}` }}>
@@ -2284,9 +2387,9 @@ function priorityColor(p) {
   return COLOR.green;
 }
 
-function ChamadosTab() {
+function ChamadosTab({ usuario }) {
   const [tickets, setTickets] = useState([
-    { id: uid(), titulo: "App trava ao ler uma tag RFID duas vezes seguidas", descricao: "", categoria: "Bug / Erro", prioridade: "Alta", status: "Aberto", autor: TECNICO.nome, time: new Date(Date.now() - 2 * 3600000) },
+    { id: uid(), titulo: "App trava ao ler uma tag RFID duas vezes seguidas", descricao: "", categoria: "Bug / Erro", prioridade: "Alta", status: "Aberto", autor: USUARIO_DEMO.nome, time: new Date(Date.now() - 2 * 3600000) },
   ]);
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
@@ -2297,7 +2400,7 @@ function ChamadosTab() {
     // Condição: exige um título preenchido, descrição, categoria e
     // prioridade têm valores padrão, então não bloqueiam o envio.
     if (!titulo.trim()) return;
-    setTickets((t) => [{ id: uid(), titulo, descricao, categoria, prioridade, status: "Aberto", autor: TECNICO.nome, time: new Date() }, ...t]);
+    setTickets((t) => [{ id: uid(), titulo, descricao, categoria, prioridade, status: "Aberto", autor: usuario?.nome ?? "—", time: new Date() }, ...t]);
     setTitulo(""); setDescricao(""); setCategoria(CATEGORIAS[0]); setPrioridade("Média");
   }
   function resolver(id) {
