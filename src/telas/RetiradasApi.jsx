@@ -11,16 +11,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ClipboardCheck, X } from "lucide-react";
 import { carregarDormentes, carregarLocais, carregarUsuarios } from "../api/catalogos.js";
 import { podeVerAba } from "../papeis.js";
-import { data, nomeEspecie, nomeLocal } from "../rotulos.js";
+import { data, inicioDoDia, nomeEspecie, nomeLocal } from "../rotulos.js";
 import { Btn, COLOR, FONT_DISPLAY, Label, Panel, SectionTitle, selectStyle } from "../ui.jsx";
+import { DetalheDormente } from "./DetalheDormente.jsx";
 import { TabelaApi } from "./TabelaApi.jsx";
-
-// "2026-10-21" (input type=date, dia local) → início desse dia em UTC ISO.
-function inicioDoDia(texto, somarDias = 0) {
-  if (!texto) return "";
-  const [a, m, d] = texto.split("-").map(Number);
-  return new Date(a, m - 1, d + somarDias).toISOString();
-}
 
 function colunas(mostrarResponsavel) {
   return [
@@ -38,6 +32,7 @@ export function RetiradasApi({ usuario, onLog }) {
   const [de, setDe] = useState("");
   const [ate, setAte] = useState("");
   const [total, setTotal] = useState(null);
+  const [detalhe, setDetalhe] = useState(null);
   const mostrarResponsavel = podeVerAba("usuarios", usuario?.papel);
 
   // `ate` é inclusivo na tela (o dia inteiro) e exclusivo na API: soma 1 dia.
@@ -91,6 +86,7 @@ export function RetiradasApi({ usuario, onLog }) {
         colunas={cols}
         enriquecer={enriquecer}
         aoCarregar={setTotal}
+        onLinhaClick={(l) => setDetalhe(l.sleeper_id)}
         vazio="Nenhuma retirada registrada nesse período."
         nomeArquivo="retiradas_rm"
         nomeAba="Retiradas (RM)"
@@ -114,6 +110,7 @@ export function RetiradasApi({ usuario, onLog }) {
           </>
         }
       />
+      {detalhe && <DetalheDormente id={detalhe} usuario={usuario} onClose={() => setDetalhe(null)} />}
     </div>
   );
 }

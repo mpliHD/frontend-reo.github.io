@@ -24,6 +24,15 @@ export const TIPO_OCORRENCIA = {
   other: "Outra",
 };
 
+export const RESULTADO_INSPECAO = {
+  approved: { rotulo: "Aprovada", tom: "ok" },
+  rejected: { rotulo: "Reprovada", tom: "danger" },
+};
+
+export const CONSERVACAO = { good: "Bom", fair: "Regular", poor: "Ruim" };
+export const UMIDADE = { dry: "Seco", moist: "Úmido", wet: "Molhado" };
+export const TIPO_LOCAL = { warehouse: "Pátio / armazém", street: "Rua" };
+
 // Entidades que aparecem em /logs (campo `entity`).
 export const ENTIDADE_LOG = {
   sleeper: "Dormente",
@@ -57,6 +66,20 @@ export function tomStatus(valor) {
   return STATUS_DORMENTE[valor]?.tom ?? "neutro";
 }
 
+// true/false/null → "Sim"/"Não"/"" (null = não informado).
+export function simNao(v) {
+  if (v === null || v === undefined) return "";
+  return v ? "Sim" : "Não";
+}
+
+// 92 → "1 min 32s" (tempo de inspeção).
+export function duracao(segundos) {
+  if (segundos === null || segundos === undefined) return "";
+  const m = Math.floor(segundos / 60);
+  const s = Math.round(segundos % 60);
+  return m ? `${m} min ${s}s` : `${s}s`;
+}
+
 // Nome de exibição de uma espécie (resumo da API): nome popular, senão o científico.
 export function nomeEspecie(especie) {
   if (!especie) return "";
@@ -76,4 +99,13 @@ export function nomeLocal(local, porId) {
 // o navegador converte para o fuso local na hora de mostrar.
 export function data(iso) {
   return iso ? new Date(iso) : null;
+}
+
+// "2026-10-21" (input type=date, dia no fuso do navegador) → início desse dia
+// em ISO/UTC, para os filtros ?de=&ate= da API. `somarDias` = 1 transforma o
+// "até" inclusivo da tela no `ate` exclusivo da API.
+export function inicioDoDia(texto, somarDias = 0) {
+  if (!texto) return "";
+  const [a, m, d] = texto.split("-").map(Number);
+  return new Date(a, m - 1, d + somarDias).toISOString();
 }

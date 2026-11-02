@@ -31,6 +31,11 @@ export function podeVerAba(aba, papel) {
   return !permitidos || permitidos.includes(papel);
 }
 
+// Quem pode escrever em cada catálogo (o resto só consulta). Espelha
+// SPECIES_ROLES e MANAGEMENT_ROLES de app/core/permissions.py da API.
+export const podeEditarEspecies = (papel) => papel === "admin" || papel === "especialista";
+export const podeEditarLocais = (papel) => papel === "admin" || papel === "supervisor";
+
 // Converte o usuário da API ({name, registration, role, ...}) para os nomes
 // usados nas telas do site.
 export function usuarioDaApi(u) {

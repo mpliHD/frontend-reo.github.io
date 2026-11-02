@@ -1,6 +1,15 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { STATUS_DORMENTE, data, nomeEspecie, nomeLocal, rotulo, tomStatus } from "./rotulos.js";
+import { STATUS_DORMENTE, data, duracao, nomeEspecie, nomeLocal, rotulo, simNao, tomStatus } from "./rotulos.js";
+
+test("sim/não e duração, com vazio para não informado", () => {
+  assert.equal(simNao(true), "Sim");
+  assert.equal(simNao(false), "Não");
+  assert.equal(simNao(null), "");
+  assert.equal(duracao(92), "1 min 32s");
+  assert.equal(duracao(45), "45s");
+  assert.equal(duracao(null), "");
+});
 
 test("rótulo e tom de status, com valor desconhecido cru", () => {
   assert.equal(rotulo(STATUS_DORMENTE, "quarantine"), "Quarentena");

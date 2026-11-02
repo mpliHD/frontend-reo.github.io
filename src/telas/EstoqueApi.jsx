@@ -10,6 +10,7 @@ import { api } from "../api/index.js";
 import { carregarEspecies, carregarLocais } from "../api/catalogos.js";
 import { STATUS_DORMENTE, data, nomeEspecie, nomeLocal, rotulo, tomStatus } from "../rotulos.js";
 import { Btn, COLOR, FONT_DISPLAY, Panel, SectionTitle, selectStyle } from "../ui.jsx";
+import { DetalheDormente } from "./DetalheDormente.jsx";
 import { TabelaApi, useAtrasado } from "./TabelaApi.jsx";
 
 const INDICADORES = [
@@ -37,7 +38,8 @@ function colunas(locais) {
   ];
 }
 
-export function EstoqueApi({ onLog }) {
+export function EstoqueApi({ usuario, onLog }) {
+  const [detalhe, setDetalhe] = useState(null); // id do dormente aberto no detalhe
   const [status, setStatus] = useState("in_stock"); // a aba é "em estoque": abre filtrada
   const [especie, setEspecie] = useState("");
   const [local, setLocal] = useState("");
@@ -73,7 +75,7 @@ export function EstoqueApi({ onLog }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <SectionTitle icon={Warehouse} title="Dormentes" sub="Um dormente por tag RFID, com os dados da plaqueta e o local atual" />
+      <SectionTitle icon={Warehouse} title="Dormentes" sub="Um dormente por tag RFID, com os dados da plaqueta e o local atual; clique numa linha para ver o histórico" />
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
         {INDICADORES.map((k) => {
@@ -94,6 +96,7 @@ export function EstoqueApi({ onLog }) {
         caminho="/dormentes"
         consulta={consulta}
         colunas={cols}
+        onLinhaClick={(d) => setDetalhe(d.id)}
         vazio="Nenhum dormente encontrado com esses filtros."
         nomeArquivo="dormentes"
         nomeAba="Dormentes"
@@ -131,6 +134,7 @@ export function EstoqueApi({ onLog }) {
           </>
         }
       />
+      {detalhe && <DetalheDormente id={detalhe} usuario={usuario} onClose={() => setDetalhe(null)} />}
     </div>
   );
 }

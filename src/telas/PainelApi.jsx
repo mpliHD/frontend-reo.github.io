@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Activity, AlertTriangle, ClipboardList, Clock, LayoutDashboard, Loader2, Server, Timer, Warehouse, XCircle } from "lucide-react";
 import { api } from "../api/index.js";
-import { STATUS_DORMENTE, TIPO_OCORRENCIA, rotulo } from "../rotulos.js";
+import { STATUS_DORMENTE, TIPO_OCORRENCIA, duracao, rotulo } from "../rotulos.js";
 import { COLOR, EmptyState, FONT_DISPLAY, FONT_MONO, Panel, SectionTitle, SignalDot, selectStyle } from "../ui.jsx";
 import { mensagemErro } from "./TabelaApi.jsx";
 
@@ -21,13 +21,6 @@ const fmt = (n, casas = 0) => (n ?? 0).toLocaleString("pt-BR", { minimumFraction
 
 // "2026-10-21" → "21/10" (o dia vem da API como data, sem hora).
 const diaCurto = (dia) => `${dia.slice(8, 10)}/${dia.slice(5, 7)}`;
-
-function duracao(segundos) {
-  if (segundos == null) return "—";
-  const m = Math.floor(segundos / 60);
-  const s = Math.round(segundos % 60);
-  return m ? `${m} min ${s}s` : `${s}s`;
-}
 
 function Grafico({ dados, barras, altura = 220, vertical = false, chave = "nome" }) {
   if (!dados.length) return <EmptyState text="Sem dados no período." />;
@@ -118,7 +111,7 @@ export function PainelApi() {
         { label: "Em estoque", valor: fmt(porStatus.in_stock), icone: Warehouse, cor: COLOR.green },
         { label: "Em quarentena", valor: fmt(porStatus.quarantine), icone: AlertTriangle, cor: porStatus.quarantine ? COLOR.amber : COLOR.textFaint },
         { label: "Inspeções no período", valor: fmt(ind.inspections_total), icone: ClipboardList, cor: COLOR.blue },
-        { label: "Tempo médio de inspeção", valor: duracao(ind.average_inspection_seconds), icone: Timer, cor: COLOR.textFaint },
+        { label: "Tempo médio de inspeção", valor: duracao(ind.average_inspection_seconds) || "—", icone: Timer, cor: COLOR.textFaint },
         { label: "Reprovação nas inspeções", valor: ind.rejection_rate == null ? "—" : `${fmt(ind.rejection_rate * 100, 1)}%`, icone: XCircle, cor: ind.rejection_rate ? COLOR.amber : COLOR.textFaint },
         { label: "Perdas no período", valor: fmt(ind.losses), icone: AlertTriangle, cor: ind.losses ? COLOR.red : COLOR.textFaint },
       ]

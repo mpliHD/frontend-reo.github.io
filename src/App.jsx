@@ -15,7 +15,7 @@ import {
   Menu, Users, ShieldAlert, LifeBuoy, Plus, Trash2, Send, Image as ImageIcon, Camera,
   Eye, EyeOff, Mail, Link2,
   Warehouse, Truck, ClipboardCheck, Download, FileSpreadsheet, Search,
-  ArrowUp, ArrowDown, ArrowUpDown, Layers, CalendarClock,
+  ArrowUp, ArrowDown, ArrowUpDown, Layers, CalendarClock, SearchCheck, TreeDeciduous,
 } from "lucide-react";
 // Endereço da API e modo demonstração (ver src/config.js).
 import { API_URL, MODO_DEMO } from "./config.js";
@@ -32,6 +32,9 @@ import { RetiradasApi } from "./telas/RetiradasApi.jsx";
 import { PainelApi } from "./telas/PainelApi.jsx";
 import { LogsApi } from "./telas/LogsApi.jsx";
 import { UsuariosApi } from "./telas/UsuariosApi.jsx";
+import { InspecoesApi } from "./telas/InspecoesApi.jsx";
+import { EspeciesApi } from "./telas/EspeciesApi.jsx";
+import { LocaisApi } from "./telas/LocaisApi.jsx";
 
 // APIS pra INTEGRAÇÃO
 // Guarda a URL base e a chave de API num Context do React, em vez de cada
@@ -357,15 +360,19 @@ const MOSTRAR_ABAS_DEV = import.meta.env.DEV || import.meta.env.VITE_MOSTRAR_ABA
 // chegar, chamados), então a aba só aparece no modo demonstração, até
 // existir backend para ela (decisão de 2026-11-02). Com a API, "Dormentes em
 // Pedido" vira "Retiradas (RM)", que é o que a API registra.
+// `soApi`: telas que só existem com a API (não há dados fictícios para elas).
 const NAV_PUBLICO = [
   { key: "dormentes_estoque", label: MODO_DEMO ? "Dormentes em Estoque" : "Dormentes", icon: Warehouse },
   { key: "dormentes_pedido", label: MODO_DEMO ? "Dormentes em Pedido" : "Retiradas (RM)", icon: ClipboardCheck },
+  { key: "inspecoes", label: "Inspeções", icon: SearchCheck, soApi: true },
   { key: "dormentes_chegada", label: "Dormentes a Chegar", icon: Truck, soDemo: true },
   { key: "dashboard", label: "Painel de Monitoramento", icon: LayoutDashboard },
+  { key: "especies", label: "Espécies de Madeira", icon: TreeDeciduous, soApi: true },
+  { key: "locais", label: "Locais", icon: MapPin, soApi: true },
   { key: "usuarios", label: "Usuários & Permissões", icon: Users },
   { key: "chamados", label: "Suporte / Chamados", icon: LifeBuoy, soDemo: true },
   { key: "logs", label: "Logs e Auditoria", icon: ClipboardList },
-].filter((n) => MODO_DEMO || !n.soDemo);
+].filter((n) => (MODO_DEMO ? !n.soApi : !n.soDemo));
 
 // Abas só da equipe de desenvolvimento (ver MODO DESENVOLVEDOR acima).
 const NAV_DEV = [
@@ -1273,9 +1280,13 @@ export default function App() {
           {/* Condição de todas as abas abaixo: no modo demonstração usam os
               dados fictícios; com a API, as telas de src/telas/. */}
           {/* Abas de dormentes (demo): as 3 visões usam o mesmo componente, só muda a descrição da visão */}
-          {abaAtual === "dormentes_estoque" && (MODO_DEMO ? <VisaoDormentes key="estoque" visao={VISAO_ESTOQUE} onLog={pushLog} /> : <EstoqueApi onLog={pushLog} />)}
+          {abaAtual === "dormentes_estoque" && (MODO_DEMO ? <VisaoDormentes key="estoque" visao={VISAO_ESTOQUE} onLog={pushLog} /> : <EstoqueApi usuario={usuario} onLog={pushLog} />)}
           {abaAtual === "dormentes_pedido" && (MODO_DEMO ? <VisaoDormentes key="pedido" visao={VISAO_PEDIDO} onLog={pushLog} /> : <RetiradasApi usuario={usuario} onLog={pushLog} />)}
           {abaAtual === "dormentes_chegada" && <VisaoDormentes key="chegada" visao={VISAO_CHEGADA} onLog={pushLog} />}
+          {/* Telas só da API (soApi no menu) */}
+          {abaAtual === "inspecoes" && <InspecoesApi usuario={usuario} onLog={pushLog} />}
+          {abaAtual === "especies" && <EspeciesApi usuario={usuario} onLog={pushLog} />}
+          {abaAtual === "locais" && <LocaisApi usuario={usuario} onLog={pushLog} />}
           {/* Abas de desenvolvedor: só existem com MOSTRAR_ABAS_DEV (ver MODO DESENVOLVEDOR) */}
           {MOSTRAR_ABAS_DEV && abaAtual === "operacao" && (
             <OperacaoTab online={online} onNovoRegistro={handleNovoRegistro} records={records} />

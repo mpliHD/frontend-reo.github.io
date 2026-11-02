@@ -54,6 +54,11 @@ export async function carregarDormentes(ids) {
   return dormentes;
 }
 
+// Depois de criar/editar um local ou espécie, a próxima tela busca de novo.
+export function esquecerCatalogo(chave) {
+  cache.delete(chave);
+}
+
 // Ao sair, outro usuário pode entrar com outro papel: esquece tudo.
 export function limparCatalogos() {
   cache.clear();

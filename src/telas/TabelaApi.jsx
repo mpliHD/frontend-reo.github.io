@@ -10,6 +10,7 @@
 // - recarga: número que, ao mudar, busca a página de novo (ex.: depois de editar).
 // - Coluna com `render(linha)` desenha a célula na tela (ex.: um select); o
 //   Excel continua usando `valor`.
+// - onLinhaClick: opcional; com ele a linha fica clicável (ex.: abrir o detalhe).
 import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Download, Loader2 } from "lucide-react";
 import { api } from "../api/index.js";
@@ -37,7 +38,7 @@ export function useAtrasado(valor, ms = 350) {
 
 const semEnriquecer = async (itens) => itens;
 
-export function TabelaApi({ caminho, consulta, colunas, enriquecer = semEnriquecer, filtros, vazio, nomeArquivo, nomeAba, onLog, aoCarregar, recarga = 0 }) {
+export function TabelaApi({ caminho, consulta, colunas, enriquecer = semEnriquecer, filtros, vazio, nomeArquivo, nomeAba, onLog, aoCarregar, recarga = 0, onLinhaClick }) {
   const [offset, setOffset] = useState(0);
   const [pagina, setPagina] = useState({ linhas: [], total: 0 });
   const [carregando, setCarregando] = useState(true);
@@ -130,7 +131,11 @@ export function TabelaApi({ caminho, consulta, colunas, enriquecer = semEnriquec
             </thead>
             <tbody>
               {pagina.linhas.map((linha, i) => (
-                <tr key={linha.id ?? i} style={{ background: i % 2 ? COLOR.panelAlt : "transparent" }}>
+                <tr
+                  key={linha.id ?? i}
+                  onClick={onLinhaClick ? () => onLinhaClick(linha) : undefined}
+                  style={{ background: i % 2 ? COLOR.panelAlt : "transparent", cursor: onLinhaClick ? "pointer" : undefined }}
+                >
                   {colunasTela.map((c) => {
                     const v = c.valor(linha);
                     return (

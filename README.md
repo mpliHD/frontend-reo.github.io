@@ -43,15 +43,20 @@ API (`{detail, code}`) em `ErroApi`. Os tokens ficam no `sessionStorage`
 | Aba | Rota da API | Quem vê |
 |---|---|---|
 | Dormentes | `GET /dormentes` (um por tag RFID; filtros de status, espécie, local e busca por tag/ata) | todos |
+| Detalhe do dormente (clique na linha) | `GET /dormentes/{id}/historico` (movimentações, inspeções e ocorrências) | todos |
 | Retiradas (RM) | `GET /estoque/movimentacoes?kind=withdrawal` + nomes de `/locais`, `/dormentes/{id}` e `/usuarios` | todos (responsável só para supervisor/admin) |
+| Inspeções | `GET /inspecoes` (checklist e resultado; filtros de resultado e período) | todos (inspetor só para supervisor/admin) |
+| Espécies de Madeira | `GET /especies`; `POST/PATCH /especies` | todos; edição por especialista e admin |
+| Locais | `GET /locais`; `POST/PATCH /locais` | todos; edição por supervisor e admin |
 | Painel de Monitoramento | `GET /indicadores` e `GET /monitoramento/status` | supervisor, admin |
 | Usuários & Permissões | `GET/POST /usuarios`, `PATCH /usuarios/{id}/papel`, `POST /usuarios/convite` | supervisor (leitura), admin |
 | Logs e Auditoria | `GET /logs` | supervisor, admin |
 
 A paginação é feita pela API (50 por página) e o "Exportar para Excel" baixa
 todas as páginas do filtro atual. "Dormentes a Chegar" e "Suporte / Chamados"
-não têm dados na API e só aparecem no modo demonstração. No modo
-demonstração todas as abas continuam com os dados fictícios.
+não têm dados na API e só aparecem no modo demonstração; Inspeções, Espécies
+e Locais só aparecem com a API. No modo demonstração todas as abas continuam
+com os dados fictícios. Espécies e locais não são apagados, são desativados.
 
 ## Login de teste (modo demonstração)
 

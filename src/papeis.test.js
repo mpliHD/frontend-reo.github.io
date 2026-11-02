@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { PAPEIS, podeVerAba, rotuloPapel, usuarioDaApi } from "./papeis.js";
+import { PAPEIS, podeEditarEspecies, podeEditarLocais, podeVerAba, rotuloPapel, usuarioDaApi } from "./papeis.js";
 
 test("os 5 papéis da API, sem Analista", () => {
   assert.deepEqual(PAPEIS.map((p) => p.valor), ["operador", "tecnico", "especialista", "supervisor", "admin"]);
@@ -20,6 +20,11 @@ test("abas sem restrição para qualquer papel", () => {
   for (const papel of ["operador", "tecnico", "especialista", "supervisor", "admin"]) {
     assert.equal(podeVerAba("dormentes_estoque", papel), true, papel);
   }
+});
+
+test("quem edita espécies e locais", () => {
+  assert.deepEqual(PAPEIS.map((p) => p.valor).filter(podeEditarEspecies), ["especialista", "admin"]);
+  assert.deepEqual(PAPEIS.map((p) => p.valor).filter(podeEditarLocais), ["supervisor", "admin"]);
 });
 
 test("usuarioDaApi traduz os campos", () => {
