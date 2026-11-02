@@ -47,9 +47,12 @@ ligadas à API uma a uma.
 
 ## Perfis de acesso (governança)
 
-Em **Usuários & Permissões**: `Operador`, `Analista` e `Admin`. A troca de
-papel é feita direto na tabela (select por linha). Isso hoje é só interface
-— veja a seção de Segurança abaixo antes de tratar como controle de acesso real.
+Os mesmos 5 papéis da API (`src/papeis.js`): `operador`, `tecnico`,
+`especialista`, `supervisor` e `admin`. Com a API, o login é por matrícula ou
+e-mail e o papel vem do servidor; Painel, Logs e Usuários só aparecem para
+supervisor e admin. Esconder a aba é só conveniência: quem barra de verdade é
+a API (403). Em **Usuários & Permissões** a troca de papel ainda é local
+(modo demonstração) e será ligada a `PATCH /usuarios/{id}/papel`.
 
 ## Convite por e-mail
 
