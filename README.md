@@ -7,7 +7,39 @@ painel de monitoramento, sincronização com credenciais de 48h e logs de
 auditoria. Os dados são fictícios (mock), prontos para depois ligar ao
 Firebase de verdade.
 
-## Login de teste
+## Rodar no computador
+
+```bash
+npm ci          # instala as dependências (node_modules não vai para o git)
+npm run dev     # abre http://localhost:5173/app.html, já com as abas de desenvolvedor
+npm test        # testes do cliente da API (test runner do Node, sem backend)
+npm run publicar  # gera a versão publicada em dist/ e atualiza o index.html da raiz
+```
+
+## API e modo demonstração
+
+O site está sendo ligado à [API REO](https://github.com/Legalso/cptm-reo-api)
+(FastAPI + Postgres). A configuração vem de variáveis do build, lidas em
+`src/config.js`:
+
+| Variável | Para que serve |
+|---|---|
+| `VITE_API_URL` | URL base da API, sem barra no fim. Em `npm run dev` o padrão é `http://localhost:4000`. |
+| `VITE_MODO_DEMO=true` | Força o modo demonstração mesmo com API configurada. |
+| `VITE_MOSTRAR_ABAS_DEV=true` | Mostra as abas de desenvolvedor no site publicado. |
+
+**Modo demonstração:** sem `VITE_API_URL` (é o caso do site publicado hoje,
+porque a API ainda não tem endereço público), o site usa os dados fictícios
+e mostra uma faixa avisando. Nada com prefixo `VITE_` é segredo: tudo vai
+para o JavaScript público.
+
+Todas as chamadas à API passam por `src/api/cliente.js`, que manda o token,
+renova a sessão quando o access token vence (15 min) e converte os erros da
+API (`{detail, code}`) em `ErroApi`. Os tokens ficam no `sessionStorage`
+(somem ao fechar a aba). As telas ainda usam os dados fictícios; elas serão
+ligadas à API uma a uma.
+
+## Login de teste (modo demonstração)
 
 - Usuário: `Admin`
 - Senha: `Senha123`
@@ -40,13 +72,18 @@ onde o site estiver hospedado no momento, trocaremos a lógica de
 ## Estrutura
 
 ```
-cptm-monitoramento/
-├── index.html          # HTML raiz carregado pelo Vite
-├── package.json        # dependências (react, recharts, lucide-react)
-├── vite.config.js       # configuração do Vite
+frontend-reo.github.io/
+├── index.html          # página publicada no GitHub Pages (aponta para dist/)
+├── app.html            # entrada do código-fonte para o Vite (npm run dev / build)
+├── package.json        # dependências (react, recharts, lucide-react, write-excel-file)
+├── vite.config.js      # configuração do Vite
+├── dist/               # versão compilada que o Pages serve (gerada por npm run publicar)
+├── scripts/            # atualizar-index.mjs, usado pelo npm run publicar
 ├── src/
 │   ├── main.jsx        # ponto de entrada React
-│   └── App.jsx         # toda a aplicação (telas, dados mock, lógica)
+│   ├── config.js       # URL da API e modo demonstração
+│   ├── api/            # cliente HTTP, sessão (tokens) e testes
+│   └── App.jsx         # telas, dados mock e lógica
 └── README.md
 ```
 

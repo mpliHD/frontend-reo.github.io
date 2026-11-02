@@ -20,6 +20,8 @@ import {
 // Gera arquivos .xlsx dentro do navegador (usado nos botões "Exportar para Excel").
 // A versão "universal" não depende de Web Worker, então funciona no GitHub Pages sem configuração extra.
 import writeXlsxFile from "write-excel-file/universal";
+// Endereço da API e modo demonstração (ver src/config.js).
+import { API_URL, MODO_DEMO } from "./config.js";
 
 // APIS pra INTEGRAÇÃO
 // Guarda a URL base e a chave de API num Context do React, em vez de cada
@@ -319,6 +321,7 @@ function LoginScreen({ online, onSuccess }) {
             </div>
           )}
 
+          <FaixaDemo style={{ border: "1px solid #f0ddb8", borderRadius: 4, marginBottom: 12 }} />
           <Panel style={{ padding: 28 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
               <StepDot active={stage === "credentials"} done={stage === "mfa"} label="1" />
@@ -448,6 +451,25 @@ function Btn({ children, onClick, full, variant = "primary", type = "button", sm
   );
 }
 
+// FAIXA DO MODO DEMONSTRAÇÃO
+// Aparece só quando MODO_DEMO é verdadeiro (site publicado sem API, ver
+// src/config.js), para ninguém confundir os dados fictícios com dados reais.
+function FaixaDemo({ style }) {
+  if (!MODO_DEMO) return null;
+  return (
+    <div role="status" style={{
+      display: "flex", alignItems: "center", gap: 8, padding: "7px 16px", flexShrink: 0,
+      background: COLOR.amberTint, borderBottom: "1px solid #f0ddb8", color: COLOR.amber,
+      fontSize: 12, lineHeight: 1.4, ...style,
+    }}>
+      <AlertTriangle size={13} style={{ flexShrink: 0 }} />
+      <span>
+        <b>Modo demonstração:</b> todos os dados são fictícios e nada é lido da API.
+      </span>
+    </div>
+  );
+}
+
 // MENU LATERAL pra configuração de navegação
 // useViewport devolve a largura atual da janela e se atualiza sozinho
 // quando o usuário redimensiona (usado para decidir quando o menu vira uma
@@ -474,12 +496,6 @@ function useViewport() {
 // No site publicado (`npm run build`) o valor é `false` e o Vite remove esse
 // código do arquivo final, ou seja, as telas nem chegam ao navegador do usuário.
 const MOSTRAR_ABAS_DEV = import.meta.env.DEV || import.meta.env.VITE_MOSTRAR_ABAS_DEV === "true";
-
-// URL do backend. No site publicado fica vazia (o convite por e-mail então
-// pula a chamada de API e abre o e-mail do usuário). Para apontar para um
-// backend, defina VITE_API_URL no build; em desenvolvimento o padrão é o
-// backend local (porta 4000).
-const URL_API_PADRAO = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:4000" : "");
 
 // Abas visíveis para todos os usuários, na ordem do menu.
 const NAV_PUBLICO = [
@@ -1206,7 +1222,9 @@ export default function App() {
   const [records, setRecords] = useState([]);
   const [pending, setPending] = useState([]);
   const [logs, setLogs] = useState([]);
-  const [baseUrl, setBaseUrl] = useState(URL_API_PADRAO);
+  // No site publicado a URL fica vazia enquanto não houver API (o convite por
+  // e-mail então pula a chamada e abre o e-mail do usuário).
+  const [baseUrl, setBaseUrl] = useState(API_URL);
   const [apiKey, setApiKey] = useState("");
   const integrationValue = useMemo(() => ({ baseUrl, setBaseUrl, apiKey, setApiKey }), [baseUrl, apiKey]);
   const [lastSync, setLastSync] = useState(new Date(Date.now() - 12 * 60000));
@@ -1383,6 +1401,7 @@ export default function App() {
 
       {/* Main column */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0 }}>
+        <FaixaDemo />
         {/* Top status bar */}
         <div style={{
           minHeight: 52, borderBottom: `1px solid ${COLOR.line}`, display: "flex", alignItems: "center", flexWrap: "wrap",
