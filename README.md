@@ -36,8 +36,22 @@ para o JavaScript público.
 Todas as chamadas à API passam por `src/api/cliente.js`, que manda o token,
 renova a sessão quando o access token vence (15 min) e converte os erros da
 API (`{detail, code}`) em `ErroApi`. Os tokens ficam no `sessionStorage`
-(somem ao fechar a aba). As telas ainda usam os dados fictícios; elas serão
-ligadas à API uma a uma.
+(somem ao fechar a aba).
+
+### Telas com a API (`src/telas/`)
+
+| Aba | Rota da API | Quem vê |
+|---|---|---|
+| Dormentes | `GET /dormentes` (um por tag RFID; filtros de status, espécie, local e busca por tag/ata) | todos |
+| Retiradas (RM) | `GET /estoque/movimentacoes?kind=withdrawal` + nomes de `/locais`, `/dormentes/{id}` e `/usuarios` | todos (responsável só para supervisor/admin) |
+| Painel de Monitoramento | `GET /indicadores` e `GET /monitoramento/status` | supervisor, admin |
+| Usuários & Permissões | `GET/POST /usuarios`, `PATCH /usuarios/{id}/papel`, `POST /usuarios/convite` | supervisor (leitura), admin |
+| Logs e Auditoria | `GET /logs` | supervisor, admin |
+
+A paginação é feita pela API (50 por página) e o "Exportar para Excel" baixa
+todas as páginas do filtro atual. "Dormentes a Chegar" e "Suporte / Chamados"
+não têm dados na API e só aparecem no modo demonstração. No modo
+demonstração todas as abas continuam com os dados fictícios.
 
 ## Login de teste (modo demonstração)
 

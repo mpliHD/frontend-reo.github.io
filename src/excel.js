@@ -22,6 +22,8 @@ export function formatarValor(coluna, v) {
       return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
     case "data":
       return v.toLocaleDateString("pt-BR");
+    case "dataHora": // datas da API (UTC) mostradas no fuso do navegador
+      return v.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
     default:
       return String(v);
   }
@@ -39,6 +41,8 @@ export function celulaExcel(coluna, linha) {
       return { value: v, type: Number, format: '"R$" #,##0.00' };
     case "data":
       return { value: v, type: Date, format: "dd/mm/yyyy" };
+    case "dataHora":
+      return { value: v, type: Date, format: "dd/mm/yyyy hh:mm" };
     default:
       return { value: String(v), type: String };
   }

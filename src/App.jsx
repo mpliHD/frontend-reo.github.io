@@ -25,6 +25,13 @@ import {
   COLOR, FONT_DISPLAY, FONT_MONO, FONT_BODY, FontLoader, BrandMark, fmtTime, fmtShort, uid, SignalDot, Panel, Label, Field, Btn, FaixaDemo, Selo, selectStyle, SectionTitle, EmptyState, DataTable, roleColor, OPCOES_PAPEL,
 } from "./ui.jsx";
 import { formatarValor, celulaExcel, baixarExcel } from "./excel.js";
+// Telas ligadas à API (usadas fora do modo demonstração).
+import { limparCatalogos } from "./api/catalogos.js";
+import { EstoqueApi } from "./telas/EstoqueApi.jsx";
+import { RetiradasApi } from "./telas/RetiradasApi.jsx";
+import { PainelApi } from "./telas/PainelApi.jsx";
+import { LogsApi } from "./telas/LogsApi.jsx";
+import { UsuariosApi } from "./telas/UsuariosApi.jsx";
 
 // APIS pra INTEGRAÇÃO
 // Guarda a URL base e a chave de API num Context do React, em vez de cada
@@ -346,16 +353,19 @@ function useViewport() {
 // código do arquivo final, ou seja, as telas nem chegam ao navegador do usuário.
 const MOSTRAR_ABAS_DEV = import.meta.env.DEV || import.meta.env.VITE_MOSTRAR_ABAS_DEV === "true";
 
-// Abas visíveis para todos os usuários, na ordem do menu.
+// Abas do menu, na ordem. `soDemo`: a API não tem esses dados (compras a
+// chegar, chamados), então a aba só aparece no modo demonstração, até
+// existir backend para ela (decisão de 2026-11-02). Com a API, "Dormentes em
+// Pedido" vira "Retiradas (RM)", que é o que a API registra.
 const NAV_PUBLICO = [
-  { key: "dormentes_estoque", label: "Dormentes em Estoque", icon: Warehouse },
-  { key: "dormentes_pedido", label: "Dormentes em Pedido", icon: ClipboardCheck },
-  { key: "dormentes_chegada", label: "Dormentes a Chegar", icon: Truck },
+  { key: "dormentes_estoque", label: MODO_DEMO ? "Dormentes em Estoque" : "Dormentes", icon: Warehouse },
+  { key: "dormentes_pedido", label: MODO_DEMO ? "Dormentes em Pedido" : "Retiradas (RM)", icon: ClipboardCheck },
+  { key: "dormentes_chegada", label: "Dormentes a Chegar", icon: Truck, soDemo: true },
   { key: "dashboard", label: "Painel de Monitoramento", icon: LayoutDashboard },
   { key: "usuarios", label: "Usuários & Permissões", icon: Users },
-  { key: "chamados", label: "Suporte / Chamados", icon: LifeBuoy },
+  { key: "chamados", label: "Suporte / Chamados", icon: LifeBuoy, soDemo: true },
   { key: "logs", label: "Logs e Auditoria", icon: ClipboardList },
-];
+].filter((n) => MODO_DEMO || !n.soDemo);
 
 // Abas só da equipe de desenvolvimento (ver MODO DESENVOLVEDOR acima).
 const NAV_DEV = [
@@ -979,6 +989,7 @@ export default function App() {
     if (MODO_DEMO) return undefined;
     // Sessão perdida (token inválido ou refresh vencido): volta ao login com aviso.
     const cancelar = api.aoPerderSessao(() => {
+      limparCatalogos();
       setUsuario(null);
       setScreen("login");
       setAvisoLogin("Sua sessão expirou. Entre novamente.");
@@ -1053,6 +1064,7 @@ export default function App() {
 
   function sair() {
     api.sair();
+    limparCatalogos();
     setUsuario(null);
     setScreen("login");
   }
@@ -1258,25 +1270,28 @@ export default function App() {
         {/* Content roteador simples de abas: só renderiza o componente da
             aba atual (`tab`); as outras nem chegam a ser montadas. */}
         <div style={{ flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch", padding: isMobile ? 14 : 22 }}>
-          {/* Abas de dormentes: as 3 visões usam o mesmo componente, só muda a descrição da visão */}
-          {abaAtual === "dormentes_estoque" && <VisaoDormentes key="estoque" visao={VISAO_ESTOQUE} onLog={pushLog} />}
-          {abaAtual === "dormentes_pedido" && <VisaoDormentes key="pedido" visao={VISAO_PEDIDO} onLog={pushLog} />}
+          {/* Condição de todas as abas abaixo: no modo demonstração usam os
+              dados fictícios; com a API, as telas de src/telas/. */}
+          {/* Abas de dormentes (demo): as 3 visões usam o mesmo componente, só muda a descrição da visão */}
+          {abaAtual === "dormentes_estoque" && (MODO_DEMO ? <VisaoDormentes key="estoque" visao={VISAO_ESTOQUE} onLog={pushLog} /> : <EstoqueApi onLog={pushLog} />)}
+          {abaAtual === "dormentes_pedido" && (MODO_DEMO ? <VisaoDormentes key="pedido" visao={VISAO_PEDIDO} onLog={pushLog} /> : <RetiradasApi usuario={usuario} onLog={pushLog} />)}
           {abaAtual === "dormentes_chegada" && <VisaoDormentes key="chegada" visao={VISAO_CHEGADA} onLog={pushLog} />}
           {/* Abas de desenvolvedor: só existem com MOSTRAR_ABAS_DEV (ver MODO DESENVOLVEDOR) */}
           {MOSTRAR_ABAS_DEV && abaAtual === "operacao" && (
             <OperacaoTab online={online} onNovoRegistro={handleNovoRegistro} records={records} />
           )}
-          {abaAtual === "dashboard" && (
-            <DashboardTab records={records} pending={pending} logs={logs} alerts={ALERTAS_DORMENTES} online={online} />
+          {abaAtual === "dashboard" && (MODO_DEMO
+            ? <DashboardTab records={records} pending={pending} logs={logs} alerts={ALERTAS_DORMENTES} online={online} />
+            : <PainelApi />
           )}
           {MOSTRAR_ABAS_DEV && abaAtual === "sync" && (
             <SyncTab online={online} pending={pending} lastSync={lastSync} onSync={handleSincronizarAgora}
               credExpiresAt={credExpiresAt} credHoursLeft={credHoursLeft} />
           )}
           {MOSTRAR_ABAS_DEV && abaAtual === "api" && <ApiTab online={online} />}
-          {abaAtual === "usuarios" && <UsersTab />}
+          {abaAtual === "usuarios" && (MODO_DEMO ? <UsersTab /> : <UsuariosApi usuario={usuario} onLog={pushLog} />)}
           {abaAtual === "chamados" && <ChamadosTab usuario={usuario} />}
-          {abaAtual === "logs" && <LogsTab logs={logs} />}
+          {abaAtual === "logs" && (MODO_DEMO ? <LogsTab logs={logs} /> : <LogsApi onLog={pushLog} />)}
         </div>
       </div>
     </div>
