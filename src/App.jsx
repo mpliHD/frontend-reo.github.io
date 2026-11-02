@@ -22,7 +22,7 @@ import { API_URL, MODO_DEMO } from "./config.js";
 import { api } from "./api/index.js";
 import { podeVerAba, rotuloPapel, usuarioDaApi } from "./papeis.js";
 import {
-  COLOR, FONT_DISPLAY, FONT_MONO, FONT_BODY, FontLoader, BrandMark, fmtTime, fmtShort, uid, SignalDot, Panel, Label, Field, Btn, FaixaDemo, Selo, selectStyle, SectionTitle, EmptyState, DataTable, roleColor, OPCOES_PAPEL,
+  COLOR, FONT_DISPLAY, FONT_MONO, FONT_BODY, FontLoader, BrandMark, fmtTime, fmtShort, uid, SignalDot, Panel, Label, Field, Btn, FaixaDemo, Selo, SeloLinha, selectStyle, SectionTitle, EmptyState, DataTable, roleColor, OPCOES_PAPEL,
 } from "./ui.jsx";
 import { formatarValor, celulaExcel, baixarExcel } from "./excel.js";
 // Telas ligadas à API (usadas fora do modo demonstração).
@@ -170,7 +170,7 @@ function LoginScreen({ online, onSuccess, aviso }) {
         <div style={{
           flex: "0 0 42%", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column",
           justifyContent: "space-between", padding: 40, color: "#fff",
-          background: `linear-gradient(155deg, ${COLOR.red} 0%, #a3040f 65%, #6e0209 100%)`,
+          background: `linear-gradient(155deg, ${COLOR.red} 0%, ${COLOR.redDark} 65%, ${COLOR.redDeep} 100%)`,
         }}>
           <div style={{
             position: "absolute", inset: 0, opacity: 0.16, pointerEvents: "none",
@@ -224,9 +224,9 @@ function LoginScreen({ online, onSuccess, aviso }) {
             </div>
           )}
 
-          <FaixaDemo style={{ border: "1px solid #f0ddb8", borderRadius: 4, marginBottom: 12 }} />
+          <FaixaDemo style={{ border: `1px solid ${COLOR.amberLine}`, borderRadius: 4, marginBottom: 12 }} />
           {aviso && (
-            <div role="alert" style={{ background: COLOR.amberTint, border: "1px solid #f0ddb8", color: COLOR.amber, borderRadius: 4, padding: "8px 12px", fontSize: 12, marginBottom: 12 }}>
+            <div role="alert" style={{ background: COLOR.amberTint, border: `1px solid ${COLOR.amberLine}`, color: COLOR.amber, borderRadius: 4, padding: "8px 12px", fontSize: 12, marginBottom: 12 }}>
               {aviso}
             </div>
           )}
@@ -281,7 +281,7 @@ function LoginScreen({ online, onSuccess, aviso }) {
                 <div onKeyDown={(e) => e.key === "Enter" && submitMfa(e)} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                   <div style={{
                     display: "flex", gap: 8, alignItems: "flex-start", background: online ? COLOR.greenTint : COLOR.amberTint,
-                    border: `1px solid ${online ? "#bfe4d1" : "#f0ddb8"}`, borderRadius: 4, padding: "10px 12px",
+                    border: `1px solid ${online ? COLOR.greenLine : COLOR.amberLine}`, borderRadius: 4, padding: "10px 12px",
                   }}>
                     {online ? <Wifi size={14} color={COLOR.green} style={{ marginTop: 2 }} /> : <WifiOff size={14} color={COLOR.amber} style={{ marginTop: 2 }} />}
                     <div style={{ fontSize: 12, lineHeight: 1.5, color: COLOR.textDim }}>
@@ -607,7 +607,7 @@ const COLUNAS_ESTOQUE = [
 const COLUNAS_PEDIDO = [
   { key: "requisicao", label: "Requisição", formato: "texto", mono: true, valor: (l) => l.requisicao, largura: 14 },
   { key: "servico", label: "Serviço de manutenção", formato: "texto", valor: (l) => l.servico, largura: 48 },
-  { key: "linha", label: "Linha", formato: "texto", valor: (l) => l.linha, largura: 18 },
+  { key: "linha", label: "Linha", formato: "linha", valor: (l) => l.linha, largura: 18 },
   { key: "area", label: "Área solicitante", formato: "texto", valor: (l) => l.area, largura: 30 },
   { key: "madeira", label: "Tipo de madeira", formato: "texto", valor: (l) => l.madeira, largura: 20 },
   { key: "aplicacao", label: "Aplicação", formato: "texto", valor: (l) => l.aplicacao, largura: 22 },
@@ -958,7 +958,7 @@ function VisaoDormentes({ visao, onLog }) {
                             color: v === "" || v === null ? COLOR.textFaint : COLOR.text,
                           }}
                         >
-                          {c.formato === "selo" ? <Selo texto={v} tom={c.tom(linha)} /> : formatarValor(c, v)}
+                          {c.formato === "selo" ? <Selo texto={v} tom={c.tom(linha)} /> : c.formato === "linha" ? <SeloLinha texto={v} /> : formatarValor(c, v)}
                         </td>
                       );
                     })}
@@ -1263,7 +1263,7 @@ export default function App() {
               title="Simular perda/retorno de conexão"
               style={{
                 display: "flex", alignItems: "center", gap: 6, padding: "5px 11px", borderRadius: 99,
-                border: `1px solid ${online ? "#bfe4d1" : "#f0ddb8"}`,
+                border: `1px solid ${online ? COLOR.greenLine : COLOR.amberLine}`,
                 background: online ? COLOR.greenTint : COLOR.amberTint,
                 color: online ? COLOR.green : COLOR.amber, fontFamily: FONT_MONO, fontSize: 11, cursor: "pointer", whiteSpace: "nowrap",
               }}
@@ -1410,7 +1410,7 @@ function OperacaoTab({ online, onNovoRegistro, records }) {
         </div>
 
         {tagLida ? (
-          <div style={{ animation: "slide-in .2s ease", background: COLOR.greenTint, border: "1px solid #bfe4d1", borderRadius: 4, padding: "10px 12px", marginBottom: 16, display: "flex", gap: 10, alignItems: "center" }}>
+          <div style={{ animation: "slide-in .2s ease", background: COLOR.greenTint, border: `1px solid ${COLOR.greenLine}`, borderRadius: 4, padding: "10px 12px", marginBottom: 16, display: "flex", gap: 10, alignItems: "center" }}>
             {tagLida.imagemUrl && (
               <img src={tagLida.imagemUrl} alt="Imagem do QR lido" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4, border: `1px solid ${COLOR.line}`, flexShrink: 0 }} />
             )}

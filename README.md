@@ -97,6 +97,7 @@ onde o site estiver hospedado no momento, trocaremos a lógica de
 frontend-reo.github.io/
 ├── index.html          # página publicada no GitHub Pages (aponta para dist/)
 ├── app.html            # entrada do código-fonte para o Vite (npm run dev / build)
+├── favicon.svg         # ícone da aba (mesmo desenho do BrandMark)
 ├── package.json        # dependências (react, recharts, lucide-react, write-excel-file)
 ├── vite.config.js      # configuração do Vite
 ├── dist/               # versão compilada que o Pages serve (gerada por npm run publicar)
@@ -104,15 +105,31 @@ frontend-reo.github.io/
 ├── src/
 │   ├── main.jsx        # ponto de entrada React
 │   ├── config.js       # URL da API e modo demonstração
-│   ├── api/            # cliente HTTP, sessão (tokens) e testes
-│   └── App.jsx         # telas, dados mock e lógica
+│   ├── ui.jsx          # cores, fontes e componentes visuais compartilhados
+│   ├── excel.js        # exportação para .xlsx
+│   ├── papeis.js       # papéis do RBAC e quem vê/edita cada aba
+│   ├── rotulos.js      # enums da API em português
+│   ├── api/            # cliente HTTP, sessão (tokens), catálogos em cache e testes
+│   ├── telas/          # telas ligadas à API
+│   └── App.jsx         # menu, login, telas do modo demonstração e dados mock
 └── README.md
 ```
 
-Todo o app está em `src/App.jsx` num único arquivo para facilitar a leitura;
-os blocos de cor (objeto `COLOR` no topo do arquivo) e os dados fictícios
-(constantes `ITENS`, `TECNICO`, `LOGIN_DEMO`) ficam separados no início do
-arquivo para você editar facilmente.
+## Identidade visual
+
+As cores ficam no objeto `COLOR` de `src/ui.jsx`. O vermelho (`#E2001A`) e o
+cinza (`#707173`) foram lidos do logotipo no site da CPTM; o azul (`#1351B4`),
+o fundo e o tom de aviso vêm do mesmo site, que segue o Design System do
+gov.br. A fonte é a Rawline (também do padrão gov.br), carregada pelo CDN do
+gov.br, com IBM Plex Mono para códigos e tags. `CORES_LINHA` tem as cores
+oficiais das linhas 7, 10, 11, 12 e 13.
+
+Não encontramos manual de marca público da CPTM: confirme as cores com a
+companhia. O `BrandMark` é um desenho próprio, **não** o logotipo oficial,
+que é marca registrada; usar o logo oficial depende de autorização da CPTM.
+
+Os dados fictícios do modo demonstração (`ITENS`, `USUARIO_DEMO`,
+`LOGIN_DEMO` e as tabelas de dormentes) ficam no início de `src/App.jsx`.
 
 ## Segurança: o que já foi tratado e o que está pendente
 

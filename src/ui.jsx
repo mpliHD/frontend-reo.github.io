@@ -10,40 +10,65 @@ import { PAPEIS } from "./papeis.js";
 // cor (#) em todas as telas de uma vez, sem precisar procurar cada lugar que a
 // usa. Vermelho é a cor de marca (CPTM); âmbar/verde/vermelho também são
 // usados como "sinal de status" (aviso / sucesso / crítico) nas telas.
+// Origem das cores (lidas em cptm.sp.gov.br em 2026-11-02; não achamos manual
+// de marca público, então confirme com a CPTM antes de tratar como oficial):
+// - red e brandGray: vermelho e cinza do logotipo da CPTM;
+// - blue: azul de ação do site da CPTM, que segue o Design System do gov.br;
+// - bg, amber/amberTint e text: fundo, aviso e texto do mesmo site.
 export const COLOR = {
-  bg: "#F3F4F6",
+  bg: "#F5F5F5",
   panel: "#FFFFFF",
-  panelAlt: "#F7F7F9",
-  line: "#E3E5E9",
-  red: "#E30613",       // vermelho CPTM (marca / crítico)
-  redTint: "#FCE4E6",
-  amber: "#C2760A",     // aviso (offline, pendências)
-  amberTint: "#FBF0DD",
-  green: "#1E8E5A",     // ok / sucesso
-  greenTint: "#E4F4EC",
-  blue: "#2E5C8A",      // informativo neutro
-  blueTint: "#E7EEF5",
-  text: "#1B1D22",
-  textDim: "#63676F",
-  textFaint: "#9AA0A8",
+  panelAlt: "#F8F8F8",
+  line: "#E2E2E2",
+  red: "#E2001A",       // vermelho do logo CPTM (marca / crítico)
+  redTint: "#FDE5E8",
+  redDark: "#B00014",   // tons escuros do vermelho, para o degradê do login
+  redDeep: "#78000E",
+  brandGray: "#707173", // cinza do logo CPTM
+  amber: "#947100",     // aviso (offline, pendências)
+  amberTint: "#FFF5C2",
+  amberLine: "#EEDC8A",
+  green: "#168821",     // ok / sucesso
+  greenTint: "#E3F2E5",
+  greenLine: "#B9DDBE",
+  blue: "#1351B4",      // informativo / ação secundária (azul gov.br)
+  blueTint: "#DBE8FB",
+  text: "#333333",
+  textDim: "#5E6066",
+  textFaint: "#888A8E", // mais escuro que antes (#9AA0A8) para ler melhor em fundo branco
 };
 
-export const FONT_DISPLAY = "'Space Grotesk', sans-serif";
+// Rawline é a fonte do site da CPTM (padrão gov.br); o monoespaçado continua
+// IBM Plex Mono, usado em códigos, tags RFID e números.
+export const FONT_DISPLAY = "'Rawline', 'Raleway', sans-serif";
 export const FONT_MONO = "'IBM Plex Mono', monospace";
-export const FONT_BODY = "'IBM Plex Sans', sans-serif";
+export const FONT_BODY = "'Rawline', 'Raleway', sans-serif";
+
+// Cores oficiais das linhas da CPTM (variáveis --corLinhaN do site da CPTM).
+// Linha que não está aqui aparece em cinza.
+export const CORES_LINHA = {
+  7: "#A8034F",  // Rubi
+  10: "#00829B", // Turquesa
+  11: "#F55F1A", // Coral
+  12: "#1C146B", // Safira
+  13: "#00B052", // Jade
+};
 
 // FONTES E ESTILOS GLOBAIS
 // Este componente só existe para injetar um bloco <style> com: a importação
-// das 3 fontes usadas (Google Fonts), um reset básico, e as @keyframes das
+// das fontes (Rawline pelo CDN do Design System gov.br e IBM Plex Mono pelo
+// Google Fonts), um reset básico, e as @keyframes das
 // animações usadas em vários lugares (pulso do indicador de status, entrada
 // suave de painéis, giro do ícone de carregamento, etc.). É renderizado uma
 // vez em cada tela principal (Login e App). Depois se quisermos deixar mais sofisticado
 // podemos mexer aqui
 export const FontLoader = () => (
   <style>{`
-    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+    @import url('https://cdngovbr-ds.estaleiro.serpro.gov.br/design-system/fonts/rawline/css/rawline.css');
+    @import url('https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
     * { box-sizing: border-box; }
     html, body, #root { margin: 0; height: 100%; }
+    body { background: ${COLOR.bg}; color: ${COLOR.text}; }
     ::selection { background: ${COLOR.red}; color: #fff; }
     /* Texto de exemplo dos campos em cinza claro, para não parecer que já vem preenchido */
     input::placeholder, textarea::placeholder { color: ${COLOR.textFaint}; opacity: 1; }
@@ -197,7 +222,7 @@ export function FaixaDemo({ style }) {
   return (
     <div role="status" style={{
       display: "flex", alignItems: "center", gap: 8, padding: "7px 16px", flexShrink: 0,
-      background: COLOR.amberTint, borderBottom: "1px solid #f0ddb8", color: COLOR.amber,
+      background: COLOR.amberTint, borderBottom: `1px solid ${COLOR.amberLine}`, color: COLOR.amber,
       fontSize: 12, lineHeight: 1.4, ...style,
     }}>
       <AlertTriangle size={13} style={{ flexShrink: 0 }} />
@@ -218,6 +243,19 @@ export function Selo({ texto, tom }) {
   }[tom] || { bg: COLOR.panelAlt, fg: COLOR.textDim };
   return (
     <span style={{ fontFamily: FONT_MONO, fontSize: 10.5, padding: "2px 8px", borderRadius: 99, background: cores.bg, color: cores.fg, whiteSpace: "nowrap" }}>
+      {texto}
+    </span>
+  );
+}
+
+// Nome da linha ("Linha 12-Safira") com a bolinha na cor oficial da linha.
+// Condição: o número é tirado do próprio texto; linha sem cor conhecida fica cinza.
+export function SeloLinha({ texto }) {
+  const numero = String(texto ?? "").match(/\d+/)?.[0];
+  const cor = CORES_LINHA[numero] ?? COLOR.textFaint;
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
+      <span aria-hidden="true" style={{ width: 9, height: 9, borderRadius: 99, background: cor, flexShrink: 0 }} />
       {texto}
     </span>
   );
