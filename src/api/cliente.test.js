@@ -37,6 +37,19 @@ test("login salva tokens e não manda Bearer", async () => {
   assert.deepEqual(JSON.parse(f.chamadas[0].body), { login: "RL-1", password: "senha" });
 });
 
+test("aceite de convite salva tokens e só manda matrícula se houver", async () => {
+  const s = sessaoFalsa();
+  const f = fetchRoteiro([resp(200, tokens(1)), resp(200, tokens(2))]);
+  const api = criarClienteApi({ baseUrl: "http://x", sessao: s, fetchImpl: f });
+  await api.aceitarConvite("tok.en.x", "Senha-forte-1", "");
+  assert.equal(f.chamadas[0].url, "http://x/auth/convite/aceitar");
+  assert.deepEqual(JSON.parse(f.chamadas[0].body), { token: "tok.en.x", password: "Senha-forte-1" });
+  assert.equal(f.chamadas[0].headers.Authorization, undefined);
+  await api.aceitarConvite("tok.en.x", "Senha-forte-1", "RL-9002");
+  assert.deepEqual(JSON.parse(f.chamadas[1].body), { token: "tok.en.x", password: "Senha-forte-1", registration: "RL-9002" });
+  assert.equal(s.atual.access_token, "a2");
+});
+
 test("login errado vira ErroApi e não perde sessão", async () => {
   const s = sessaoFalsa();
   let perdeu = 0;

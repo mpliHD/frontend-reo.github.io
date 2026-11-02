@@ -140,6 +140,17 @@ export function criarClienteApi({ baseUrl, sessao, fetchImpl = (...a) => fetch(.
       return tokens.user;
     },
 
+    // Aceite do convite: cria a conta e já devolve os tokens (entra direto).
+    // `matricula` só é enviada quando o convite não trouxe uma.
+    async aceitarConvite(token, senha, matricula) {
+      const tokens = await enviar("POST", "/auth/convite/aceitar", {
+        corpo: { token, password: senha, ...(matricula ? { registration: matricula } : {}) },
+        autenticar: false,
+      });
+      sessao.salvar(tokens);
+      return tokens.user;
+    },
+
     // A API não tem rota de logout: os tokens expiram sozinhos, basta esquecê-los.
     sair() {
       sessao.limpar();

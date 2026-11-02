@@ -35,6 +35,8 @@ import { UsuariosApi } from "./telas/UsuariosApi.jsx";
 import { InspecoesApi } from "./telas/InspecoesApi.jsx";
 import { EspeciesApi } from "./telas/EspeciesApi.jsx";
 import { LocaisApi } from "./telas/LocaisApi.jsx";
+import { AceiteConvite } from "./telas/AceiteConvite.jsx";
+import { tokenDoHash } from "./convite.js";
 
 // APIS pra INTEGRAÇÃO
 // Guarda a URL base e a chave de API num Context do React, em vez de cada
@@ -980,9 +982,13 @@ function VisaoDormentes({ visao, onLog }) {
 // enquanto screen === "login", mostra só a tela de login (SIMPLES MAS FUNCIONA); depois que o
 // login dá certo, mostra o layout com menu lateral + conteúdo da aba ativa.
 export default function App() {
+  // Link de convite (#/convite/<token>) abre a tela de aceite antes de tudo.
+  const [tokenConvite] = useState(() => tokenDoHash(typeof window !== "undefined" ? window.location.hash : ""));
   // Condição: com API e tokens guardados (ex.: depois de um F5), começa em
   // "carregando" e confirma a sessão em GET /auth/me; senão vai direto ao login.
-  const [screen, setScreen] = useState(!MODO_DEMO && api.estaLogado() ? "carregando" : "login");
+  const [screen, setScreen] = useState(
+    tokenConvite ? "convite" : !MODO_DEMO && api.estaLogado() ? "carregando" : "login",
+  );
   const [usuario, setUsuario] = useState(null); // { id, nome, matricula, email, papel }
   const [avisoLogin, setAvisoLogin] = useState("");
   const [online, setOnline] = useState(true);
@@ -1001,7 +1007,7 @@ export default function App() {
       setScreen("login");
       setAvisoLogin("Sua sessão expirou. Entre novamente.");
     });
-    if (api.estaLogado()) {
+    if (api.estaLogado() && !tokenConvite) {
       api.get("/auth/me")
         .then((u) => { setUsuario(usuarioDaApi(u)); setScreen("app"); })
         .catch((erro) => {
@@ -1121,6 +1127,19 @@ export default function App() {
 
   // Enquanto não fez login, a tela inteira é só o LoginScreen, nada do
   // layout com menu lateral é montado.
+  // Sai do link de convite: limpa o #/convite/... para um F5 não voltar a ele.
+  function sairDoConvite() {
+    window.history.replaceState(null, "", window.location.pathname + window.location.search);
+  }
+  if (screen === "convite") {
+    return (
+      <AceiteConvite
+        token={tokenConvite}
+        onAceito={(u) => { sairDoConvite(); handleLoginSuccess(u); }}
+        onIrParaLogin={() => { sairDoConvite(); setScreen("login"); }}
+      />
+    );
+  }
   if (screen === "login") return <LoginScreen online={online} onSuccess={handleLoginSuccess} aviso={avisoLogin} />;
   if (screen === "carregando") {
     return (
