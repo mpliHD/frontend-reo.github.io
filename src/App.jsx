@@ -22,7 +22,7 @@ import { API_URL, MODO_DEMO } from "./config.js";
 import { api } from "./api/index.js";
 import { podeVerAba, rotuloPapel, usuarioDaApi } from "./papeis.js";
 import {
-  COLOR, FONT_DISPLAY, FONT_MONO, FONT_BODY, FontLoader, BrandMark, fmtTime, fmtShort, uid, SignalDot, Panel, Label, Field, Btn, FaixaDemo, Selo, SeloLinha, selectStyle, SectionTitle, EmptyState, DataTable, roleColor, OPCOES_PAPEL,
+  COLOR, FONT_DISPLAY, FONT_MONO, FONT_BODY, FontLoader, BrandMark, MarcaSistema, fmtTime, fmtShort, uid, SignalDot, Panel, Label, Field, Btn, FaixaDemo, Selo, SeloLinha, selectStyle, SectionTitle, EmptyState, DataTable, roleColor, OPCOES_PAPEL,
 } from "./ui.jsx";
 import { formatarValor, celulaExcel, baixarExcel } from "./excel.js";
 // Telas ligadas à API (usadas fora do modo demonstração).
@@ -180,14 +180,8 @@ function LoginScreen({ online, onSuccess, aviso }) {
             backgroundSize: "120px 100%", animation: "rail-sweep 6s linear infinite",
           }} />
 
-          <div style={{ position: "relative", zIndex: 1, display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 8, background: "rgba(255,255,255,.14)", border: "1px solid rgba(255,255,255,.35)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <BrandMark size={26} />
-            </div>
-            <div>
-              <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 18, lineHeight: 1.1 }}>CPTM · ARMAZÉM</div>
-              <div style={{ fontFamily: FONT_MONO, fontSize: 10.5, letterSpacing: 0.6, opacity: 0.85 }}>MONITORAMENTO LOGÍSTICO</div>
-            </div>
+          <div style={{ position: "relative", zIndex: 1 }}>
+            <MarcaSistema altura={34} cartao corTexto="rgba(255,255,255,.85)" />
           </div>
 
           <div style={{ position: "relative", zIndex: 1 }}>
@@ -217,12 +211,8 @@ function LoginScreen({ online, onSuccess, aviso }) {
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
         <div style={{ width: "100%", maxWidth: 380 }}>
           {!showVisualPanel && (
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 28 }}>
-              <BrandMark />
-              <div>
-                <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 16, lineHeight: 1.1 }}>CPTM · ARMAZÉM</div>
-                <div style={{ fontFamily: FONT_MONO, fontSize: 10.5, color: COLOR.textDim, letterSpacing: 0.5 }}>MONITORAMENTO LOGÍSTICO</div>
-              </div>
+            <div style={{ marginBottom: 28 }}>
+              <MarcaSistema altura={34} />
             </div>
           )}
 
@@ -1164,13 +1154,8 @@ export default function App() {
   const sidebarContent = (
     <>
       <div style={{ padding: showLabels ? "20px 18px" : "20px 0", display: "flex", alignItems: "center", justifyContent: showLabels ? "flex-start" : "center", gap: 10, borderBottom: `1px solid ${COLOR.line}` }}>
-        <BrandMark size={30} />
-        {showLabels && (
-          <div>
-            <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 13.5, lineHeight: 1.1, whiteSpace: "nowrap" }}>CPTM · ARMAZÉM</div>
-            <div style={{ fontFamily: FONT_MONO, fontSize: 9.5, color: COLOR.textDim, whiteSpace: "nowrap" }}>MONITORAMENTO</div>
-          </div>
-        )}
+        {/* Menu aberto: logo completo + nome do sistema; recolhido: só o símbolo */}
+        {showLabels ? <MarcaSistema altura={22} subtitulo="MONITORAMENTO" /> : <BrandMark size={30} />}
       </div>
 
       <div style={{ padding: 10, display: "flex", flexDirection: "column", gap: 2, flex: 1, minHeight: 0, overflowY: "auto" }}>

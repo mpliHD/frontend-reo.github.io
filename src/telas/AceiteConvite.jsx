@@ -8,7 +8,7 @@ import { MODO_DEMO } from "../config.js";
 import { api } from "../api/index.js";
 import { lerConvite } from "../convite.js";
 import { rotuloPapel, usuarioDaApi } from "../papeis.js";
-import { BrandMark, Btn, COLOR, FONT_BODY, FONT_DISPLAY, FONT_MONO, Field, FontLoader, Label, Panel } from "../ui.jsx";
+import { MarcaSistema, Btn, COLOR, FONT_BODY, FONT_DISPLAY, FONT_MONO, Field, FontLoader, Label, Panel } from "../ui.jsx";
 
 function mensagemErro(erro) {
   if (erro.code === "token_expired") return "Este convite expirou. Peça um novo convite ao administrador.";
@@ -79,12 +79,8 @@ export function AceiteConvite({ token, onAceito, onIrParaLogin }) {
     <div className="app-shell" style={{ background: COLOR.bg, color: COLOR.text, fontFamily: FONT_BODY, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
       <FontLoader />
       <div style={{ width: "100%", maxWidth: 400 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
-          <BrandMark />
-          <div>
-            <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 16, lineHeight: 1.1 }}>CPTM · ARMAZÉM</div>
-            <div style={{ fontFamily: FONT_MONO, fontSize: 10.5, color: COLOR.textDim, letterSpacing: 0.5 }}>MONITORAMENTO LOGÍSTICO</div>
-          </div>
+        <div style={{ marginBottom: 24 }}>
+          <MarcaSistema altura={34} />
         </div>
         <Panel style={{ padding: 28 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>

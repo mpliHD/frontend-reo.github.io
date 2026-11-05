@@ -97,7 +97,7 @@ onde o site estiver hospedado no momento, trocaremos a lógica de
 frontend-reo.github.io/
 ├── index.html          # página publicada no GitHub Pages (aponta para dist/)
 ├── app.html            # entrada do código-fonte para o Vite (npm run dev / build)
-├── favicon.svg         # ícone da aba (mesmo desenho do BrandMark)
+├── favicon.png         # ícone da aba (símbolo do logo da CPTM)
 ├── package.json        # dependências (react, recharts, lucide-react, write-excel-file)
 ├── vite.config.js      # configuração do Vite
 ├── dist/               # versão compilada que o Pages serve (gerada por npm run publicar)
@@ -125,8 +125,12 @@ gov.br, com IBM Plex Mono para códigos e tags. `CORES_LINHA` tem as cores
 oficiais das linhas 7, 10, 11, 12 e 13.
 
 Não encontramos manual de marca público da CPTM: confirme as cores com a
-companhia. O `BrandMark` é um desenho próprio, **não** o logotipo oficial,
-que é marca registrada; usar o logo oficial depende de autorização da CPTM.
+companhia. O logotipo é o oficial da CPTM (`src/assets/logo-cptm.png`, baixado
+de cptm.sp.gov.br, recortado e com fundo transparente), usado a pedido da
+equipe do projeto; `src/assets/simbolo-cptm.png` e `favicon.png` são só o
+símbolo. No código: `MarcaSistema` (logo + nome do sistema) e `BrandMark`
+(só o símbolo, no menu recolhido). Se a CPTM fornecer o logo em SVG ou em
+resolução maior, basta trocar esses arquivos.
 
 Os dados fictícios do modo demonstração (`ITENS`, `USUARIO_DEMO`,
 `LOGIN_DEMO` e as tabelas de dormentes) ficam no início de `src/App.jsx`.

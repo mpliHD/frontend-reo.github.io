@@ -2,6 +2,11 @@
 // Cores, fontes e peças de interface usadas por todas as telas (App.jsx e
 // src/telas/). Saíram do App.jsx sem mudança de comportamento.
 import { AlertTriangle } from "lucide-react";
+// Logotipo oficial da CPTM (baixado de cptm.sp.gov.br em 2026-11-05, recortado
+// e com o fundo branco tornado transparente) e o símbolo dele, sozinho.
+// Arquivos pequenos: o Vite embute os dois no JavaScript, sem pedido extra.
+import logoCptm from "./assets/logo-cptm.png";
+import simboloCptm from "./assets/simbolo-cptm.png";
 import { MODO_DEMO } from "./config.js";
 import { PAPEIS } from "./papeis.js";
 
@@ -91,16 +96,26 @@ export const FontLoader = () => (
 );
 
 // LOGOTIPO (MARCA)
-// SVG desenhado à mão, inspirado em sinalização ferroviária (setas + trilho
-// tracejado). NÃO é o logotipo oficial da CPTM (não queremos copyright) que é marca registrada
+// Logotipo oficial da CPTM, usado a pedido da equipe do projeto.
+// - BrandMark: só o símbolo (a seta vermelha), para espaços pequenos como o
+//   menu recolhido.
+// - MarcaSistema: logotipo completo + nome do sistema. O logo é vermelho e
+//   cinza; num fundo colorido (painel vermelho do login) ele vai num cartão
+//   branco (`cartao`), senão o símbolo some no vermelho.
 export function BrandMark({ size = 30 }) {
+  return <img src={simboloCptm} width={size} height={size} alt="CPTM" style={{ display: "block", flexShrink: 0 }} />;
+}
+
+export function MarcaSistema({ altura = 30, cartao = false, corTexto = COLOR.textDim, subtitulo = "MONITORAMENTO LOGÍSTICO" }) {
+  const logo = <img src={logoCptm} alt="CPTM" style={{ height: altura, width: "auto", display: "block" }} />;
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
-      <rect width="32" height="32" rx="6" fill={COLOR.red} />
-      <path d="M7 20 L14 12 L18 16 L25 8" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M20 8 H25 V13" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-      <line x1="6" y1="24" x2="26" y2="24" stroke="#fff" strokeWidth="1.6" strokeDasharray="2.5 3" />
-    </svg>
+    <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+      {cartao ? <div style={{ background: "#fff", borderRadius: 6, padding: "6px 10px" }}>{logo}</div> : logo}
+      <div style={{ borderLeft: `1px solid ${cartao ? "rgba(255,255,255,.4)" : COLOR.line}`, paddingLeft: 12, minWidth: 0 }}>
+        <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 13, lineHeight: 1.15, color: cartao ? "#fff" : COLOR.text, whiteSpace: "nowrap" }}>ARMAZÉM</div>
+        <div style={{ fontFamily: FONT_MONO, fontSize: 9.5, letterSpacing: 0.4, color: corTexto, whiteSpace: "nowrap" }}>{subtitulo}</div>
+      </div>
+    </div>
   );
 }
 
