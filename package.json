@@ -1,5 +1,5 @@
 {
-  "homepage": "https://mplihd.github.io/cptm-monitoramento-armazem",
+  "homepage": "https://mplihd.github.io/frontend-reo.github.io",
   "name": "cptm-monitoramento-armazem",
   "private": true,
   "version": "1.0.0",
@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "test": "node --test \"src/**/*.test.js\"",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
     "publicar": "vite build && node scripts/atualizar-index.mjs"

@@ -15,11 +15,28 @@ import {
   Menu, Users, ShieldAlert, LifeBuoy, Plus, Trash2, Send, Image as ImageIcon, Camera,
   Eye, EyeOff, Mail, Link2,
   Warehouse, Truck, ClipboardCheck, Download, FileSpreadsheet, Search,
-  ArrowUp, ArrowDown, ArrowUpDown, Layers, CalendarClock,
+  ArrowUp, ArrowDown, ArrowUpDown, Layers, CalendarClock, SearchCheck, TreeDeciduous,
 } from "lucide-react";
-// Gera arquivos .xlsx dentro do navegador (usado nos botões "Exportar para Excel").
-// A versão "universal" não depende de Web Worker, então funciona no GitHub Pages sem configuração extra.
-import writeXlsxFile from "write-excel-file/universal";
+// Endereço da API e modo demonstração (ver src/config.js).
+import { API_URL, MODO_DEMO } from "./config.js";
+import { api } from "./api/index.js";
+import { podeVerAba, rotuloPapel, usuarioDaApi } from "./papeis.js";
+import {
+  COLOR, FONT_DISPLAY, FONT_MONO, FONT_BODY, FontLoader, BrandMark, MarcaSistema, fmtTime, fmtShort, uid, SignalDot, Panel, Label, Field, Btn, FaixaDemo, Selo, SeloLinha, selectStyle, SectionTitle, EmptyState, DataTable, roleColor, OPCOES_PAPEL,
+} from "./ui.jsx";
+import { formatarValor, celulaExcel, baixarExcel } from "./excel.js";
+// Telas ligadas à API (usadas fora do modo demonstração).
+import { limparCatalogos } from "./api/catalogos.js";
+import { EstoqueApi } from "./telas/EstoqueApi.jsx";
+import { RetiradasApi } from "./telas/RetiradasApi.jsx";
+import { PainelApi } from "./telas/PainelApi.jsx";
+import { LogsApi } from "./telas/LogsApi.jsx";
+import { UsuariosApi } from "./telas/UsuariosApi.jsx";
+import { InspecoesApi } from "./telas/InspecoesApi.jsx";
+import { EspeciesApi } from "./telas/EspeciesApi.jsx";
+import { LocaisApi } from "./telas/LocaisApi.jsx";
+import { AceiteConvite } from "./telas/AceiteConvite.jsx";
+import { tokenDoHash } from "./convite.js";
 
 // APIS pra INTEGRAÇÃO
 // Guarda a URL base e a chave de API num Context do React, em vez de cada
@@ -30,80 +47,6 @@ const IntegrationContext = React.createContext({
   baseUrl: "", apiKey: "", setBaseUrl: () => {}, setApiKey: () => {},
 });
 
-// PALETA DE CORES
-// Objeto único com todas as cores do sistema, trocar um valor aqui muda a
-// cor (#) em todas as telas de uma vez, sem precisar procurar cada lugar que a
-// usa. Vermelho é a cor de marca (CPTM); âmbar/verde/vermelho também são
-// usados como "sinal de status" (aviso / sucesso / crítico) nas telas.
-const COLOR = {
-  bg: "#F3F4F6",
-  panel: "#FFFFFF",
-  panelAlt: "#F7F7F9",
-  line: "#E3E5E9",
-  red: "#E30613",       // vermelho CPTM (marca / crítico)
-  redTint: "#FCE4E6",
-  amber: "#C2760A",     // aviso (offline, pendências)
-  amberTint: "#FBF0DD",
-  green: "#1E8E5A",     // ok / sucesso
-  greenTint: "#E4F4EC",
-  blue: "#2E5C8A",      // informativo neutro
-  blueTint: "#E7EEF5",
-  text: "#1B1D22",
-  textDim: "#63676F",
-  textFaint: "#9AA0A8",
-};
-
-const FONT_DISPLAY = "'Space Grotesk', sans-serif";
-const FONT_MONO = "'IBM Plex Mono', monospace";
-const FONT_BODY = "'IBM Plex Sans', sans-serif";
-
-// FONTES E ESTILOS GLOBAIS
-// Este componente só existe para injetar um bloco <style> com: a importação
-// das 3 fontes usadas (Google Fonts), um reset básico, e as @keyframes das
-// animações usadas em vários lugares (pulso do indicador de status, entrada
-// suave de painéis, giro do ícone de carregamento, etc.). É renderizado uma
-// vez em cada tela principal (Login e App). Depois se quisermos deixar mais sofisticado
-// podemos mexer aqui
-const FontLoader = () => (
-  <style>{`
-    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
-    * { box-sizing: border-box; }
-    html, body, #root { margin: 0; height: 100%; }
-    ::selection { background: ${COLOR.red}; color: #fff; }
-    /* Texto de exemplo dos campos em cinza claro, para não parecer que já vem preenchido */
-    input::placeholder, textarea::placeholder { color: ${COLOR.textFaint}; opacity: 1; }
-    table { border-collapse: collapse; width: 100%; }
-    .app-shell { min-height: 100vh; }
-    @supports (height: 100dvh) { .app-shell { min-height: 100dvh; } }
-    /* Layout logado: altura fixa = altura da tela. Assim só a área de conteúdo
-       rola, e o menu lateral (com o botão Sair) fica sempre visível, mesmo nas
-       abas com tabelas altas. */
-    .app-shell-fixo { height: 100vh; }
-    @supports (height: 100dvh) { .app-shell-fixo { height: 100dvh; } }
-    @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.35} }
-    @keyframes slide-in { from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:translateY(0)} }
-    @keyframes fade-in { from{opacity:0} to{opacity:1} }
-    @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
-    @keyframes rail-sweep { 0%{background-position: 0 0} 100%{background-position: 120px 0} }
-    @keyframes drift { 0%,100%{transform: translateY(0)} 50%{transform: translateY(-8px)} }
-    .spin { animation: spin 0.9s linear infinite; }
-  `}</style>
-);
-
-// LOGOTIPO (MARCA)
-// SVG desenhado à mão, inspirado em sinalização ferroviária (setas + trilho
-// tracejado). NÃO é o logotipo oficial da CPTM (não queremos copyright) que é marca registrada
-function BrandMark({ size = 30 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
-      <rect width="32" height="32" rx="6" fill={COLOR.red} />
-      <path d="M7 20 L14 12 L18 16 L25 8" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M20 8 H25 V13" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-      <line x1="6" y1="24" x2="26" y2="24" stroke="#fff" strokeWidth="1.6" strokeDasharray="2.5 3" />
-    </svg>
-  );
-}
-
 // DADOS FICTÍCIOS (MOCK)
 // Tudo nesta seção é dado de exemplo, guardado só na memória do navegador
 // nada aqui vem de um banco de dados real ainda (precisaríamos ajudar na aba "APIs &
@@ -113,9 +56,9 @@ function BrandMark({ size = 30 }) {
 //   tratado à parte, na aba Operação de Campo, porque usa imagem em vez de
 //   leitor.
 // OPERACOES: os 4 tipos de registro que o técnico pode lançar em campo.
-// TECNICO: representa a pessoa atualmente logada (nome, matrícula, papel)
-//  hoje é fixo, mas seria substituído pelos dados devolvidos pelo login.
-// LOGIN_DEMO: usuário e senha aceitos na tela de login deste protótipo.
+// USUARIO_DEMO: a pessoa "logada" no modo demonstração (nome, matrícula,
+//  papel). Com a API, o usuário vem do login / GET /auth/me.
+// LOGIN_DEMO: usuário e senha aceitos na tela de login do modo demonstração.
 const ITENS = [
   { id: "BAT-01", nome: "Batente", setor: "Via Permanente" },
   { id: "DOR-02", nome: "Dormente", setor: "Via Permanente" },
@@ -137,86 +80,37 @@ const OPERACOES = [
   { key: "ocorrencia", label: "Ocorrência", icon: AlertTriangle },
 ];
 
-const TECNICO = { nome: "Ana Giulia", matricula: "CPTM-4471", turno: "Tarde · Pátio Barra Funda", papel: "Admin" };
+const USUARIO_DEMO = { id: "demo", nome: "Ana Giulia", matricula: "CPTM-4471", email: "", papel: "admin" };
 const LOGIN_DEMO = { usuario: "Admin", senha: "Senha123" };
 
-// FUNÇÕES UTILITÁRIAS
-// Pequenas funções puras (sem tela) usadas em vários componentes:
-// fmtTime / fmtShort: formatam datas no padrão brasileiro (a "curta" só
-//  mostra hora:minuto:segundo, usada em listas onde o dia é óbvio).
-// uid: gera um código curto e aleatório, usado como identificador de
-// registros mockados (não é um UUID de verdade, só serve para o `key` do
-//  React e para exibir um "código" plausível na tela).
-function fmtTime(d) {
-  return d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" });
-}
-function fmtShort(d) {
-  return d.toLocaleString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-}
-function uid() { return Math.random().toString(36).slice(2, 8).toUpperCase(); }
-
-// COMPONENTES BÁSICOS DE INTERFACE
-// Peças pequenas e reaproveitadas em quase toda tela:
-// SignalDot: a bolinha pulsante de status (verde=ok, âmbar=aviso,
-//  vermelho=crítico). A cor é escolhida por um encadeamento de condições:
-//   se(if) status for == "ok" usa verde; senão (else), se for "warn" usa âmbar; para
-//   qualquer outro valor (ex.: "erro"), usa vermelho. --PRECISAMOS TESTAR SE A REGRA DA EXCEÇÃO É BOA
-// Panel: o "cartão" branco com borda usado para agrupar conteúdo. Se
-//   receber `accent`, pinta uma borda colorida mais grossa do lado esquerdo
-//   (usado para destacar o estado de um cartão, como erro ou sucesso).
-// Label: rótulo pequeno em fonte monoespaçada, usado acima de campos de
-//   formulário e em métricas.
-function SignalDot({ status }) {
-  const c = status === "ok" ? COLOR.green : status === "warn" ? COLOR.amber : COLOR.red;
-  return (
-    <span style={{ position: "relative", display: "inline-flex", width: 8, height: 8 }}>
-      <span style={{ position: "absolute", inset: 0, borderRadius: 99, background: c, animation: "pulse-dot 1.8s ease-in-out infinite" }} />
-    </span>
-  );
-}
-
-function Panel({ children, style, accent }) {
-  return (
-    <div
-      style={{
-        background: COLOR.panel,
-        border: `1px solid ${COLOR.line}`,
-        borderLeft: accent ? `3px solid ${accent}` : `1px solid ${COLOR.line}`,
-        borderRadius: 6,
-        padding: 18,
-        boxShadow: "0 1px 2px rgba(20,20,30,.03)",
-        ...style,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
-function Label({ children, tone }) {
-  return (
-    <span style={{ fontFamily: FONT_MONO, fontSize: 11, letterSpacing: 0.4, color: tone || COLOR.textDim }}>
-      {children}
-    </span>
-  );
-}
-
 // LOGIN
-// Tela de autenticação em duas etapas: 1) usuário/senha, 2) código MFA.
+// Com a API: matrícula ou e-mail + senha em POST /auth/login. A fase 1 da API
+// não tem MFA (/auth/mfa responde 501), então a etapa 2 só aparece no modo
+// demonstração. TODO(decidir): MFA por TOTP ou por código no e-mail (CONTEXTO.md).
+// No modo demonstração: 1) usuário/senha de LOGIN_DEMO, 2) código MFA fictício.
 // LOGIN_TIPS são as dicas que giram sozinhas no painel vermelho da esquerda (PODEMOS AJUSTAR)
 const LOGIN_TIPS = [
   { icon: WifiOff, text: "Perdeu a conexão em campo? O sistema continua registrando tudo localmente e sincroniza sozinho quando a rede voltar." },
   { icon: ScanLine, text: "Cada dormente é identificado por RFID, então estoque, pedidos e chegadas ficam rastreáveis do início ao fim." },
-  { icon: ShieldAlert, text: "Cada pessoa entra com um nível de acesso: Operador, Analista ou Admin." },
+  { icon: ShieldAlert, text: "Cada pessoa entra com um nível de acesso: Operador, Técnico, Especialista, Supervisor ou Admin." },
   { icon: RefreshCw, text: "Credenciais offline ficam válidas por 48h, tempo suficiente para um turno inteiro em campo." },
 ];
 
-function LoginScreen({ online, onSuccess }) {
+// Mensagem para cada `code` de erro que o login pode receber da API.
+function mensagemErroLogin(erro) {
+  if (erro.code === "invalid_credentials") return "Matrícula/e-mail ou senha inválidos.";
+  if (erro.code === "inactive_user") return "Este usuário está desativado. Fale com o administrador.";
+  if (erro.code === "validation_error") return "Preencha a matrícula (ou e-mail) e a senha.";
+  return erro.detail || "Não foi possível entrar. Tente de novo.";
+}
+
+function LoginScreen({ online, onSuccess, aviso }) {
   const [stage, setStage] = useState("credentials"); // "credentials" = etapa 1, "mfa" = etapa 2
   const [user, setUser] = useState("");
   const [pass, setPass] = useState("");
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
+  const [entrando, setEntrando] = useState(false);
   const [tipIndex, setTipIndex] = useState(0);
   const width = useViewport();
   // Condição: só mostra o painel visual vermelho (com as dicas) se a tela
@@ -232,9 +126,22 @@ function LoginScreen({ online, onSuccess }) {
     return () => clearInterval(t);
   }, []);
 
-  const submitCreds = (e) => {
+  const submitCreds = async (e) => {
     e.preventDefault();
-    // Condição: usuário (sem diferenciar maiúsculas/minúsculas) e senha
+    if (!MODO_DEMO) {
+      if (entrando) return; // evita dois logins com Enter + clique
+      setError("");
+      setEntrando(true);
+      try {
+        const u = await api.entrar(user.trim(), pass);
+        onSuccess(usuarioDaApi(u));
+      } catch (erro) {
+        setError(mensagemErroLogin(erro));
+        setEntrando(false);
+      }
+      return;
+    }
+    // Modo demonstração. Condição: usuário (sem diferenciar maiúsculas/minúsculas) e senha
     // precisam bater exatamente com LOGIN_DEMO. Se qualquer um dos dois
     // estiver errado, mostra erro e não avança de etapa.
     if (user.trim().toLowerCase() !== LOGIN_DEMO.usuario.toLowerCase() || pass.trim() !== LOGIN_DEMO.senha) {
@@ -250,7 +157,7 @@ function LoginScreen({ online, onSuccess }) {
     // Condição: neste protótipo, qualquer código com 4 ou mais dígitos é
     // aceito (não existe um servidor de verdade validando o código... ainda).
     if (code.trim().length < 4) { setError("Código inválido — informe pelo menos 4 dígitos."); return; }
-    onSuccess();
+    onSuccess(USUARIO_DEMO);
   };
 
   const TipIcon = LOGIN_TIPS[tipIndex].icon;
@@ -265,7 +172,7 @@ function LoginScreen({ online, onSuccess }) {
         <div style={{
           flex: "0 0 42%", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column",
           justifyContent: "space-between", padding: 40, color: "#fff",
-          background: `linear-gradient(155deg, ${COLOR.red} 0%, #a3040f 65%, #6e0209 100%)`,
+          background: `linear-gradient(155deg, ${COLOR.red} 0%, ${COLOR.redDark} 65%, ${COLOR.redDeep} 100%)`,
         }}>
           <div style={{
             position: "absolute", inset: 0, opacity: 0.16, pointerEvents: "none",
@@ -273,14 +180,8 @@ function LoginScreen({ online, onSuccess }) {
             backgroundSize: "120px 100%", animation: "rail-sweep 6s linear infinite",
           }} />
 
-          <div style={{ position: "relative", zIndex: 1, display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 8, background: "rgba(255,255,255,.14)", border: "1px solid rgba(255,255,255,.35)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <BrandMark size={26} />
-            </div>
-            <div>
-              <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 18, lineHeight: 1.1 }}>CPTM · ARMAZÉM</div>
-              <div style={{ fontFamily: FONT_MONO, fontSize: 10.5, letterSpacing: 0.6, opacity: 0.85 }}>MONITORAMENTO LOGÍSTICO</div>
-            </div>
+          <div style={{ position: "relative", zIndex: 1 }}>
+            <MarcaSistema altura={34} cartao corTexto="rgba(255,255,255,.85)" />
           </div>
 
           <div style={{ position: "relative", zIndex: 1 }}>
@@ -302,7 +203,7 @@ function LoginScreen({ online, onSuccess }) {
           </div>
 
           <div style={{ position: "relative", zIndex: 1, fontFamily: FONT_MONO, fontSize: 10, opacity: 0.7 }}>
-            Protótipo acadêmico · dados fictícios
+            {MODO_DEMO ? "Protótipo acadêmico · dados fictícios" : "Protótipo acadêmico"}
           </div>
         </div>
       )}
@@ -310,24 +211,32 @@ function LoginScreen({ online, onSuccess }) {
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
         <div style={{ width: "100%", maxWidth: 380 }}>
           {!showVisualPanel && (
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 28 }}>
-              <BrandMark />
-              <div>
-                <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 16, lineHeight: 1.1 }}>CPTM · ARMAZÉM</div>
-                <div style={{ fontFamily: FONT_MONO, fontSize: 10.5, color: COLOR.textDim, letterSpacing: 0.5 }}>MONITORAMENTO LOGÍSTICO</div>
-              </div>
+            <div style={{ marginBottom: 28 }}>
+              <MarcaSistema altura={34} />
             </div>
           )}
 
+          <FaixaDemo style={{ border: `1px solid ${COLOR.amberLine}`, borderRadius: 4, marginBottom: 12 }} />
+          {aviso && (
+            <div role="alert" style={{ background: COLOR.amberTint, border: `1px solid ${COLOR.amberLine}`, color: COLOR.amber, borderRadius: 4, padding: "8px 12px", fontSize: 12, marginBottom: 12 }}>
+              {aviso}
+            </div>
+          )}
           <Panel style={{ padding: 28 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-              <StepDot active={stage === "credentials"} done={stage === "mfa"} label="1" />
-              <div style={{ flex: 1, height: 2, background: stage === "mfa" ? COLOR.red : COLOR.line, borderRadius: 99, transition: "background .3s" }} />
-              <StepDot active={stage === "mfa"} done={false} label="2" />
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontFamily: FONT_MONO, fontSize: 9.5, color: COLOR.textFaint, marginBottom: 20 }}>
-              <span>CREDENCIAIS</span><span>MFA</span>
-            </div>
+            {/* Indicador das 2 etapas (credenciais → MFA): só no modo demonstração,
+                porque com a API o login ainda é de uma etapa só. */}
+            {MODO_DEMO && (
+              <>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                  <StepDot active={stage === "credentials"} done={stage === "mfa"} label="1" />
+                  <div style={{ flex: 1, height: 2, background: stage === "mfa" ? COLOR.red : COLOR.line, borderRadius: 99, transition: "background .3s" }} />
+                  <StepDot active={stage === "mfa"} done={false} label="2" />
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontFamily: FONT_MONO, fontSize: 9.5, color: COLOR.textFaint, marginBottom: 20 }}>
+                  <span>CREDENCIAIS</span><span>MFA</span>
+                </div>
+              </>
+            )}
 
             <div key={stage} style={{ animation: "slide-in .25s ease" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }}>
@@ -336,7 +245,7 @@ function LoginScreen({ online, onSuccess }) {
                   ? <Lock size={15} color={COLOR.red} />
                   : <ShieldCheck size={15} color={COLOR.red} />}
                 <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 600, fontSize: 15 }}>
-                  {stage === "credentials" ? "Acesso do técnico" : "Autenticação de dois fatores"}
+                  {stage === "credentials" ? "Acesso ao sistema" : "Autenticação de dois fatores"}
                 </span>
               </div>
 
@@ -344,16 +253,27 @@ function LoginScreen({ online, onSuccess }) {
                   senha OU o de MFA, nunca os dois juntos. */}
               {stage === "credentials" ? (
                 <div onKeyDown={(e) => e.key === "Enter" && submitCreds(e)} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  <Field label="Usuário" value={user} onChange={setUser} placeholder="Admin" />
-                  <Field label="Senha" value={pass} onChange={setPass} placeholder="Senha123" type="password" />
-                  {error && <div style={{ color: COLOR.red, fontSize: 12.5 }}>{error}</div>}
-                  <Btn onClick={submitCreds} full>Entrar<ChevronRight size={15} /></Btn>
+                  {MODO_DEMO ? (
+                    <>
+                      <Field label="Usuário" value={user} onChange={setUser} placeholder="Admin" />
+                      <Field label="Senha" value={pass} onChange={setPass} placeholder="Senha123" type="password" />
+                    </>
+                  ) : (
+                    <>
+                      <Field label="Matrícula ou e-mail" value={user} onChange={setUser} placeholder="RL-8842 ou nome@cptm.sp.gov.br" />
+                      <Field label="Senha" value={pass} onChange={setPass} placeholder="Sua senha" type="password" />
+                    </>
+                  )}
+                  {error && <div role="alert" style={{ color: COLOR.red, fontSize: 12.5 }}>{error}</div>}
+                  <Btn onClick={submitCreds} full>
+                    {entrando ? <><Loader2 size={15} className="spin" />Entrando…</> : <>Entrar<ChevronRight size={15} /></>}
+                  </Btn>
                 </div>
               ) : (
                 <div onKeyDown={(e) => e.key === "Enter" && submitMfa(e)} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                   <div style={{
                     display: "flex", gap: 8, alignItems: "flex-start", background: online ? COLOR.greenTint : COLOR.amberTint,
-                    border: `1px solid ${online ? "#bfe4d1" : "#f0ddb8"}`, borderRadius: 4, padding: "10px 12px",
+                    border: `1px solid ${online ? COLOR.greenLine : COLOR.amberLine}`, borderRadius: 4, padding: "10px 12px",
                   }}>
                     {online ? <Wifi size={14} color={COLOR.green} style={{ marginTop: 2 }} /> : <WifiOff size={14} color={COLOR.amber} style={{ marginTop: 2 }} />}
                     <div style={{ fontSize: 12, lineHeight: 1.5, color: COLOR.textDim }}>
@@ -373,9 +293,11 @@ function LoginScreen({ online, onSuccess }) {
               )}
             </div>
           </Panel>
-          <div style={{ textAlign: "center", marginTop: 14, fontFamily: FONT_MONO, fontSize: 10.5, color: COLOR.textFaint }}>
-            login de teste: <b style={{ color: COLOR.textDim }}>{LOGIN_DEMO.usuario} / {LOGIN_DEMO.senha}</b> · qualquer código de 4+ dígitos no MFA
-          </div>
+          {MODO_DEMO && (
+            <div style={{ textAlign: "center", marginTop: 14, fontFamily: FONT_MONO, fontSize: 10.5, color: COLOR.textFaint }}>
+              login de teste: <b style={{ color: COLOR.textDim }}>{LOGIN_DEMO.usuario} / {LOGIN_DEMO.senha}</b> · qualquer código de 4+ dígitos no MFA
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -396,55 +318,6 @@ function StepDot({ active, done, label }) {
     }}>
       {done ? <CheckCircle2 size={13} /> : label}
     </div>
-  );
-}
-
-// COMPONENTES DE FORMULÁRIO
-// Field: um par label+input padronizado (usado no login).
-// Btn: botão com 3 variantes visuais (primary = vermelho sólido, ghost =
-//   contorno, subtle = cinza claro), e um estado `small` para versões
-//   compactas usadas dentro de tabelas/listas.
-function Field({ label, value, onChange, placeholder, type = "text", mono }) {
-  return (
-    <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <span style={{ fontFamily: FONT_MONO, fontSize: 10.5, color: COLOR.textDim, letterSpacing: 0.4 }}>{label.toUpperCase()}</span>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        style={{
-          background: COLOR.panelAlt, border: `1px solid ${COLOR.line}`, borderRadius: 4,
-          padding: "10px 12px", color: COLOR.text, fontSize: 14, fontFamily: mono ? FONT_MONO : FONT_BODY, outline: "none",
-        }}
-        onFocus={(e) => (e.target.style.borderColor = COLOR.red)}
-        onBlur={(e) => (e.target.style.borderColor = COLOR.line)}
-      />
-    </label>
-  );
-}
-
-function Btn({ children, onClick, full, variant = "primary", type = "button", small }) {
-  const styles = {
-    primary: { background: COLOR.red, color: "#fff", border: `1px solid ${COLOR.red}` },
-    ghost: { background: "transparent", color: COLOR.text, border: `1px solid ${COLOR.line}` },
-    subtle: { background: COLOR.panelAlt, color: COLOR.textDim, border: `1px solid ${COLOR.line}` },
-  }[variant];
-  return (
-    <button
-      type={type}
-      onClick={onClick}
-      style={{
-        ...styles, width: full ? "100%" : "auto", display: "inline-flex", alignItems: "center",
-        justifyContent: "center", gap: 6, padding: small ? "7px 12px" : "10px 16px",
-        borderRadius: 4, fontFamily: FONT_DISPLAY, fontWeight: 600, fontSize: small ? 12.5 : 13.5,
-        cursor: "pointer", transition: "opacity .15s",
-      }}
-      onMouseEnter={(e) => (e.currentTarget.style.opacity = 0.85)}
-      onMouseLeave={(e) => (e.currentTarget.style.opacity = 1)}
-    >
-      {children}
-    </button>
   );
 }
 
@@ -475,22 +348,23 @@ function useViewport() {
 // código do arquivo final, ou seja, as telas nem chegam ao navegador do usuário.
 const MOSTRAR_ABAS_DEV = import.meta.env.DEV || import.meta.env.VITE_MOSTRAR_ABAS_DEV === "true";
 
-// URL do backend. No site publicado fica vazia (o convite por e-mail então
-// pula a chamada de API e abre o e-mail do usuário). Para apontar para um
-// backend, defina VITE_API_URL no build; em desenvolvimento o padrão é o
-// backend local (porta 4000).
-const URL_API_PADRAO = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:4000" : "");
-
-// Abas visíveis para todos os usuários, na ordem do menu.
+// Abas do menu, na ordem. `soDemo`: a API não tem esses dados (compras a
+// chegar, chamados), então a aba só aparece no modo demonstração, até
+// existir backend para ela (decisão de 2026-11-02). Com a API, "Dormentes em
+// Pedido" vira "Retiradas (RM)", que é o que a API registra.
+// `soApi`: telas que só existem com a API (não há dados fictícios para elas).
 const NAV_PUBLICO = [
-  { key: "dormentes_estoque", label: "Dormentes em Estoque", icon: Warehouse },
-  { key: "dormentes_pedido", label: "Dormentes em Pedido", icon: ClipboardCheck },
-  { key: "dormentes_chegada", label: "Dormentes a Chegar", icon: Truck },
+  { key: "dormentes_estoque", label: MODO_DEMO ? "Dormentes em Estoque" : "Dormentes", icon: Warehouse },
+  { key: "dormentes_pedido", label: MODO_DEMO ? "Dormentes em Pedido" : "Retiradas (RM)", icon: ClipboardCheck },
+  { key: "inspecoes", label: "Inspeções", icon: SearchCheck, soApi: true },
+  { key: "dormentes_chegada", label: "Dormentes a Chegar", icon: Truck, soDemo: true },
   { key: "dashboard", label: "Painel de Monitoramento", icon: LayoutDashboard },
+  { key: "especies", label: "Espécies de Madeira", icon: TreeDeciduous, soApi: true },
+  { key: "locais", label: "Locais", icon: MapPin, soApi: true },
   { key: "usuarios", label: "Usuários & Permissões", icon: Users },
-  { key: "chamados", label: "Suporte / Chamados", icon: LifeBuoy },
+  { key: "chamados", label: "Suporte / Chamados", icon: LifeBuoy, soDemo: true },
   { key: "logs", label: "Logs e Auditoria", icon: ClipboardList },
-];
+].filter((n) => (MODO_DEMO ? !n.soApi : !n.soDemo));
 
 // Abas só da equipe de desenvolvimento (ver MODO DESENVOLVEDOR acima).
 const NAV_DEV = [
@@ -513,7 +387,7 @@ const ENDPOINTS = [
   { method: "GET", path: "/usuarios", desc: "Lista usuários e seus papéis" },
   { method: "POST", path: "/usuarios", desc: "Cria usuário (Admin)" },
   { method: "PATCH", path: "/usuarios/:id/papel", desc: "Eleva/altera o papel do usuário (Admin)" },
-  { method: "POST", path: "/usuarios/convite", desc: "Gera convite por e-mail (Admin/Analista)" },
+  { method: "POST", path: "/usuarios/convite", desc: "Gera convite por e-mail (Admin)" },
   { method: "POST", path: "/estoque/movimentacao", desc: "Registrar entrada / saída / transferência de itens" },
   { method: "POST", path: "/estoque/inventario", desc: "Registrar contagem / conferência de inventário" },
   { method: "POST", path: "/estoque/localizacao", desc: "Registrar posicionamento de itens no armazém" },
@@ -725,7 +599,7 @@ const COLUNAS_ESTOQUE = [
 const COLUNAS_PEDIDO = [
   { key: "requisicao", label: "Requisição", formato: "texto", mono: true, valor: (l) => l.requisicao, largura: 14 },
   { key: "servico", label: "Serviço de manutenção", formato: "texto", valor: (l) => l.servico, largura: 48 },
-  { key: "linha", label: "Linha", formato: "texto", valor: (l) => l.linha, largura: 18 },
+  { key: "linha", label: "Linha", formato: "linha", valor: (l) => l.linha, largura: 18 },
   { key: "area", label: "Área solicitante", formato: "texto", valor: (l) => l.area, largura: 30 },
   { key: "madeira", label: "Tipo de madeira", formato: "texto", valor: (l) => l.madeira, largura: 20 },
   { key: "aplicacao", label: "Aplicação", formato: "texto", valor: (l) => l.aplicacao, largura: 22 },
@@ -876,74 +750,6 @@ const ALERTAS_DORMENTES = [
   }] : []),
 ];
 
-// EXPORTAÇÃO PARA EXCEL
-// Gera um arquivo .xlsx de verdade (não CSV) dentro do próprio navegador,
-// sem enviar nada a servidor nenhum. Cada "aba" do arquivo é uma tabela.
-// - formatarValor: texto exibido na tela (e usado na busca) para cada tipo de dado.
-// - celulaExcel: converte o dado cru em célula do Excel com o tipo certo
-//   (número como número, data como data, moeda com "R$"), para que o Excel
-//   consiga somar, filtrar e montar tabela dinâmica sem precisar converter nada.
-//   Condição: valor vazio vira célula vazia, nunca o texto "—" usado na tela.
-// - baixarExcel: monta as abas (cabeçalho vermelho CPTM com texto branco e
-//   primeira linha congelada), cria o arquivo e dispara o download.
-function formatarValor(coluna, v) {
-  if (v === null || v === undefined || v === "") return "—";
-  switch (coluna.formato) {
-    case "numero":
-      return v.toLocaleString("pt-BR", { minimumFractionDigits: coluna.casas ?? 0, maximumFractionDigits: coluna.casas ?? 0 });
-    case "moeda":
-      return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-    case "data":
-      return v.toLocaleDateString("pt-BR");
-    default:
-      return String(v);
-  }
-}
-
-function celulaExcel(coluna, linha) {
-  const v = coluna.valor(linha);
-  if (v === null || v === undefined || v === "") return null;
-  switch (coluna.formato) {
-    case "numero": {
-      const casas = coluna.casas ?? 0;
-      return { value: v, type: Number, format: casas ? `#,##0.${"0".repeat(casas)}` : "#,##0" };
-    }
-    case "moeda":
-      return { value: v, type: Number, format: '"R$" #,##0.00' };
-    case "data":
-      return { value: v, type: Date, format: "dd/mm/yyyy" };
-    default:
-      return { value: String(v), type: String };
-  }
-}
-
-async function baixarExcel({ nomeArquivo, abas }) {
-  const planilhas = abas.map((aba) => {
-    const colunas = aba.colunas.filter((c) => !c.soTela);
-    return {
-      sheet: aba.nome.slice(0, 31), // o Excel limita o nome da aba a 31 caracteres
-      data: [
-        colunas.map((c) => ({ value: c.label, fontWeight: "bold", textColor: "#FFFFFF", backgroundColor: COLOR.red })),
-        ...aba.linhas.map((linha) => colunas.map((c) => celulaExcel(c, linha))),
-      ],
-      columns: colunas.map((c) => ({ width: c.largura || 16 })),
-      stickyRowsCount: 1,
-    };
-  });
-
-  const blob = await writeXlsxFile(planilhas).toBlob();
-  const hoje = new Date();
-  const dataArquivo = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}-${String(hoje.getDate()).padStart(2, "0")}`;
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `${nomeArquivo}_${dataArquivo}.xlsx`;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
 // DORMENTES — TELA (VisaoDormentes)
 // Componente único que desenha qualquer uma das 3 visões: indicadores no
 // topo, busca, filtros, botões de exportar e a tabela.
@@ -953,21 +759,6 @@ async function baixarExcel({ nomeArquivo, abas }) {
 //   decrescente, 3º volta à ordem original.
 // - "Exportar todas as visões" ignora os filtros e leva as 3 tabelas
 //   completas, cada uma em uma aba do mesmo arquivo.
-function Selo({ texto, tom }) {
-  const cores = {
-    ok: { bg: COLOR.greenTint, fg: COLOR.green },
-    info: { bg: COLOR.blueTint, fg: COLOR.blue },
-    warn: { bg: COLOR.amberTint, fg: COLOR.amber },
-    danger: { bg: COLOR.redTint, fg: COLOR.red },
-    neutro: { bg: COLOR.panelAlt, fg: COLOR.textDim },
-  }[tom] || { bg: COLOR.panelAlt, fg: COLOR.textDim };
-  return (
-    <span style={{ fontFamily: FONT_MONO, fontSize: 10.5, padding: "2px 8px", borderRadius: 99, background: cores.bg, color: cores.fg, whiteSpace: "nowrap" }}>
-      {texto}
-    </span>
-  );
-}
-
 function VisaoDormentes({ visao, onLog }) {
   const { titulo, sub, icone, colunas, linhas, filtros, kpis, nomeAba, nomeArquivo } = visao;
   const [busca, setBusca] = useState("");
@@ -1159,7 +950,7 @@ function VisaoDormentes({ visao, onLog }) {
                             color: v === "" || v === null ? COLOR.textFaint : COLOR.text,
                           }}
                         >
-                          {c.formato === "selo" ? <Selo texto={v} tom={c.tom(linha)} /> : formatarValor(c, v)}
+                          {c.formato === "selo" ? <Selo texto={v} tom={c.tom(linha)} /> : c.formato === "linha" ? <SeloLinha texto={v} /> : formatarValor(c, v)}
                         </td>
                       );
                     })}
@@ -1181,9 +972,42 @@ function VisaoDormentes({ visao, onLog }) {
 // enquanto screen === "login", mostra só a tela de login (SIMPLES MAS FUNCIONA); depois que o
 // login dá certo, mostra o layout com menu lateral + conteúdo da aba ativa.
 export default function App() {
-  const [screen, setScreen] = useState("login");
+  // Link de convite (#/convite/<token>) abre a tela de aceite antes de tudo.
+  const [tokenConvite] = useState(() => tokenDoHash(typeof window !== "undefined" ? window.location.hash : ""));
+  // Condição: com API e tokens guardados (ex.: depois de um F5), começa em
+  // "carregando" e confirma a sessão em GET /auth/me; senão vai direto ao login.
+  const [screen, setScreen] = useState(
+    tokenConvite ? "convite" : !MODO_DEMO && api.estaLogado() ? "carregando" : "login",
+  );
+  const [usuario, setUsuario] = useState(null); // { id, nome, matricula, email, papel }
+  const [avisoLogin, setAvisoLogin] = useState("");
   const [online, setOnline] = useState(true);
   const [tab, setTab] = useState(NAV[0].key); // abre na primeira aba do menu
+
+  // Menu só com as abas que o papel logado pode abrir (a API daria 403 nas outras).
+  const navVisivel = NAV.filter((n) => podeVerAba(n.key, usuario?.papel));
+  const abaAtual = navVisivel.some((n) => n.key === tab) ? tab : navVisivel[0]?.key;
+
+  useEffect(() => {
+    if (MODO_DEMO) return undefined;
+    // Sessão perdida (token inválido ou refresh vencido): volta ao login com aviso.
+    const cancelar = api.aoPerderSessao(() => {
+      limparCatalogos();
+      setUsuario(null);
+      setScreen("login");
+      setAvisoLogin("Sua sessão expirou. Entre novamente.");
+    });
+    if (api.estaLogado() && !tokenConvite) {
+      api.get("/auth/me")
+        .then((u) => { setUsuario(usuarioDaApi(u)); setScreen("app"); })
+        .catch((erro) => {
+          // 401 já foi tratado por aoPerderSessao; aqui sobra rede/servidor fora.
+          if (erro.status !== 401) setAvisoLogin(erro.detail);
+          setScreen("login");
+        });
+    }
+    return cancelar;
+  }, []);
 
   const width = useViewport();
   // Condição: abaixo de 860px consideramos "celular" — nessa largura o menu
@@ -1206,7 +1030,9 @@ export default function App() {
   const [records, setRecords] = useState([]);
   const [pending, setPending] = useState([]);
   const [logs, setLogs] = useState([]);
-  const [baseUrl, setBaseUrl] = useState(URL_API_PADRAO);
+  // No site publicado a URL fica vazia enquanto não houver API (o convite por
+  // e-mail então pula a chamada e abre o e-mail do usuário).
+  const [baseUrl, setBaseUrl] = useState(API_URL);
   const [apiKey, setApiKey] = useState("");
   const integrationValue = useMemo(() => ({ baseUrl, setBaseUrl, apiKey, setApiKey }), [baseUrl, apiKey]);
   const [lastSync, setLastSync] = useState(new Date(Date.now() - 12 * 60000));
@@ -1222,13 +1048,28 @@ export default function App() {
   const credMsLeft = credExpiresAt - now;
   const credHoursLeft = Math.max(0, credMsLeft / 3600000);
 
-  function pushLog(acao, status = "ok") {
-    setLogs((l) => [{ id: uid(), acao, status, ator: TECNICO.nome, time: new Date() }, ...l].slice(0, 60));
+  function pushLog(acao, status = "ok", ator = usuario?.nome) {
+    setLogs((l) => [{ id: uid(), acao, status, ator, time: new Date() }, ...l].slice(0, 60));
   }
 
-  function handleLoginSuccess() {
-    pushLog("Login + MFA validado (" + (online ? "online via servidor" : "offline via credenciais locais") + ")");
+  function handleLoginSuccess(u) {
+    setUsuario(u);
+    setAvisoLogin("");
+    pushLog(
+      MODO_DEMO
+        ? "Login + MFA validado (" + (online ? "online via servidor" : "offline via credenciais locais") + ")"
+        : "Login validado pela API",
+      "ok",
+      u.nome,
+    );
     setScreen("app");
+  }
+
+  function sair() {
+    api.sair();
+    limparCatalogos();
+    setUsuario(null);
+    setScreen("login");
   }
 
   function handleNovoRegistro(reg) {
@@ -1276,7 +1117,28 @@ export default function App() {
 
   // Enquanto não fez login, a tela inteira é só o LoginScreen, nada do
   // layout com menu lateral é montado.
-  if (screen === "login") return <LoginScreen online={online} onSuccess={handleLoginSuccess} />;
+  // Sai do link de convite: limpa o #/convite/... para um F5 não voltar a ele.
+  function sairDoConvite() {
+    window.history.replaceState(null, "", window.location.pathname + window.location.search);
+  }
+  if (screen === "convite") {
+    return (
+      <AceiteConvite
+        token={tokenConvite}
+        onAceito={(u) => { sairDoConvite(); handleLoginSuccess(u); }}
+        onIrParaLogin={() => { sairDoConvite(); setScreen("login"); }}
+      />
+    );
+  }
+  if (screen === "login") return <LoginScreen online={online} onSuccess={handleLoginSuccess} aviso={avisoLogin} />;
+  if (screen === "carregando") {
+    return (
+      <div className="app-shell" style={{ background: COLOR.bg, color: COLOR.textDim, fontFamily: FONT_BODY, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 13 }}>
+        <FontLoader />
+        <Loader2 size={16} className="spin" /> Conferindo sua sessão…
+      </div>
+    );
+  }
 
   // MENU LATERAL: cálculo de largura e se mostra o texto ao lado dos ícones
   // Em celular, a gaveta sempre tem a largura cheia (236px) quando aberta.
@@ -1292,19 +1154,14 @@ export default function App() {
   const sidebarContent = (
     <>
       <div style={{ padding: showLabels ? "20px 18px" : "20px 0", display: "flex", alignItems: "center", justifyContent: showLabels ? "flex-start" : "center", gap: 10, borderBottom: `1px solid ${COLOR.line}` }}>
-        <BrandMark size={30} />
-        {showLabels && (
-          <div>
-            <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 13.5, lineHeight: 1.1, whiteSpace: "nowrap" }}>CPTM · ARMAZÉM</div>
-            <div style={{ fontFamily: FONT_MONO, fontSize: 9.5, color: COLOR.textDim, whiteSpace: "nowrap" }}>MONITORAMENTO</div>
-          </div>
-        )}
+        {/* Menu aberto: logo completo + nome do sistema; recolhido: só o símbolo */}
+        {showLabels ? <MarcaSistema altura={22} subtitulo="MONITORAMENTO" /> : <BrandMark size={30} />}
       </div>
 
       <div style={{ padding: 10, display: "flex", flexDirection: "column", gap: 2, flex: 1, minHeight: 0, overflowY: "auto" }}>
-        {NAV.map((n) => {
+        {navVisivel.map((n) => {
           const Icon = n.icon;
-          const activeSel = tab === n.key;
+          const activeSel = abaAtual === n.key;
           return (
             <button
               key={n.key}
@@ -1333,15 +1190,15 @@ export default function App() {
       <div style={{ padding: showLabels ? 14 : "14px 4px", borderTop: `1px solid ${COLOR.line}` }}>
         {showLabels ? (
           <>
-            <div style={{ fontSize: 12, fontWeight: 600 }}>{TECNICO.nome}</div>
-            <div style={{ fontFamily: FONT_MONO, fontSize: 10, color: COLOR.textDim, marginBottom: 3 }}>{TECNICO.matricula}</div>
+            <div style={{ fontSize: 12, fontWeight: 600 }}>{usuario.nome}</div>
+            <div style={{ fontFamily: FONT_MONO, fontSize: 10, color: COLOR.textDim, marginBottom: 3 }}>{usuario.matricula}</div>
             <div style={{ marginBottom: 10 }}>
-              <span style={{ fontFamily: FONT_MONO, fontSize: 9.5, padding: "1px 7px", borderRadius: 99, background: roleColor(TECNICO.papel).bg, color: roleColor(TECNICO.papel).fg }}>{TECNICO.papel.toUpperCase()}</span>
+              <span style={{ fontFamily: FONT_MONO, fontSize: 9.5, padding: "1px 7px", borderRadius: 99, background: roleColor(usuario.papel).bg, color: roleColor(usuario.papel).fg }}>{rotuloPapel(usuario.papel).toUpperCase()}</span>
             </div>
-            <Btn variant="ghost" small full onClick={() => setScreen("login")}><LogOut size={13} />Sair</Btn>
+            <Btn variant="ghost" small full onClick={sair}><LogOut size={13} />Sair</Btn>
           </>
         ) : (
-          <button onClick={() => setScreen("login")} title="Sair" style={{ width: "100%", display: "flex", justifyContent: "center", background: "none", border: "none", cursor: "pointer", color: COLOR.textDim, padding: "8px 0" }}>
+          <button onClick={sair} title="Sair" style={{ width: "100%", display: "flex", justifyContent: "center", background: "none", border: "none", cursor: "pointer", color: COLOR.textDim, padding: "8px 0" }}>
             <LogOut size={15} />
           </button>
         )}
@@ -1383,6 +1240,7 @@ export default function App() {
 
       {/* Main column */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0 }}>
+        <FaixaDemo />
         {/* Top status bar */}
         <div style={{
           minHeight: 52, borderBottom: `1px solid ${COLOR.line}`, display: "flex", alignItems: "center", flexWrap: "wrap",
@@ -1397,7 +1255,7 @@ export default function App() {
               <Menu size={16} />
             </button>
             <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 600, fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              {NAV.find((n) => n.key === tab)?.label}
+              {NAV.find((n) => n.key === abaAtual)?.label}
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
@@ -1409,7 +1267,7 @@ export default function App() {
               title="Simular perda/retorno de conexão"
               style={{
                 display: "flex", alignItems: "center", gap: 6, padding: "5px 11px", borderRadius: 99,
-                border: `1px solid ${online ? "#bfe4d1" : "#f0ddb8"}`,
+                border: `1px solid ${online ? COLOR.greenLine : COLOR.amberLine}`,
                 background: online ? COLOR.greenTint : COLOR.amberTint,
                 color: online ? COLOR.green : COLOR.amber, fontFamily: FONT_MONO, fontSize: 11, cursor: "pointer", whiteSpace: "nowrap",
               }}
@@ -1423,25 +1281,32 @@ export default function App() {
         {/* Content roteador simples de abas: só renderiza o componente da
             aba atual (`tab`); as outras nem chegam a ser montadas. */}
         <div style={{ flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch", padding: isMobile ? 14 : 22 }}>
-          {/* Abas de dormentes: as 3 visões usam o mesmo componente, só muda a descrição da visão */}
-          {tab === "dormentes_estoque" && <VisaoDormentes key="estoque" visao={VISAO_ESTOQUE} onLog={pushLog} />}
-          {tab === "dormentes_pedido" && <VisaoDormentes key="pedido" visao={VISAO_PEDIDO} onLog={pushLog} />}
-          {tab === "dormentes_chegada" && <VisaoDormentes key="chegada" visao={VISAO_CHEGADA} onLog={pushLog} />}
+          {/* Condição de todas as abas abaixo: no modo demonstração usam os
+              dados fictícios; com a API, as telas de src/telas/. */}
+          {/* Abas de dormentes (demo): as 3 visões usam o mesmo componente, só muda a descrição da visão */}
+          {abaAtual === "dormentes_estoque" && (MODO_DEMO ? <VisaoDormentes key="estoque" visao={VISAO_ESTOQUE} onLog={pushLog} /> : <EstoqueApi usuario={usuario} onLog={pushLog} />)}
+          {abaAtual === "dormentes_pedido" && (MODO_DEMO ? <VisaoDormentes key="pedido" visao={VISAO_PEDIDO} onLog={pushLog} /> : <RetiradasApi usuario={usuario} onLog={pushLog} />)}
+          {abaAtual === "dormentes_chegada" && <VisaoDormentes key="chegada" visao={VISAO_CHEGADA} onLog={pushLog} />}
+          {/* Telas só da API (soApi no menu) */}
+          {abaAtual === "inspecoes" && <InspecoesApi usuario={usuario} onLog={pushLog} />}
+          {abaAtual === "especies" && <EspeciesApi usuario={usuario} onLog={pushLog} />}
+          {abaAtual === "locais" && <LocaisApi usuario={usuario} onLog={pushLog} />}
           {/* Abas de desenvolvedor: só existem com MOSTRAR_ABAS_DEV (ver MODO DESENVOLVEDOR) */}
-          {MOSTRAR_ABAS_DEV && tab === "operacao" && (
+          {MOSTRAR_ABAS_DEV && abaAtual === "operacao" && (
             <OperacaoTab online={online} onNovoRegistro={handleNovoRegistro} records={records} />
           )}
-          {tab === "dashboard" && (
-            <DashboardTab records={records} pending={pending} logs={logs} alerts={ALERTAS_DORMENTES} online={online} />
+          {abaAtual === "dashboard" && (MODO_DEMO
+            ? <DashboardTab records={records} pending={pending} logs={logs} alerts={ALERTAS_DORMENTES} online={online} />
+            : <PainelApi />
           )}
-          {MOSTRAR_ABAS_DEV && tab === "sync" && (
+          {MOSTRAR_ABAS_DEV && abaAtual === "sync" && (
             <SyncTab online={online} pending={pending} lastSync={lastSync} onSync={handleSincronizarAgora}
               credExpiresAt={credExpiresAt} credHoursLeft={credHoursLeft} />
           )}
-          {MOSTRAR_ABAS_DEV && tab === "api" && <ApiTab online={online} />}
-          {tab === "usuarios" && <UsersTab />}
-          {tab === "chamados" && <ChamadosTab />}
-          {tab === "logs" && <LogsTab logs={logs} />}
+          {MOSTRAR_ABAS_DEV && abaAtual === "api" && <ApiTab online={online} />}
+          {abaAtual === "usuarios" && (MODO_DEMO ? <UsersTab /> : <UsuariosApi usuario={usuario} onLog={pushLog} />)}
+          {abaAtual === "chamados" && <ChamadosTab usuario={usuario} />}
+          {abaAtual === "logs" && (MODO_DEMO ? <LogsTab logs={logs} /> : <LogsApi onLog={pushLog} />)}
         </div>
       </div>
     </div>
@@ -1549,7 +1414,7 @@ function OperacaoTab({ online, onNovoRegistro, records }) {
         </div>
 
         {tagLida ? (
-          <div style={{ animation: "slide-in .2s ease", background: COLOR.greenTint, border: "1px solid #bfe4d1", borderRadius: 4, padding: "10px 12px", marginBottom: 16, display: "flex", gap: 10, alignItems: "center" }}>
+          <div style={{ animation: "slide-in .2s ease", background: COLOR.greenTint, border: `1px solid ${COLOR.greenLine}`, borderRadius: 4, padding: "10px 12px", marginBottom: 16, display: "flex", gap: 10, alignItems: "center" }}>
             {tagLida.imagemUrl && (
               <img src={tagLida.imagemUrl} alt="Imagem do QR lido" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4, border: `1px solid ${COLOR.line}`, flexShrink: 0 }} />
             )}
@@ -1623,32 +1488,6 @@ function OperacaoTab({ online, onNovoRegistro, records }) {
       </Panel>
     </div>
   );
-}
-
-// COMPONENTES AUXILIARES REUTILIZÁVEIS
-// Usados em quase todas as abas a partir daqui: `selectStyle` é o estilo
-// compartilhado de inputs/selects/textareas; SectionTitle é o
-// título com ícone que abre cada bloco dentro de um Panel; EmptyState é a
-// mensagem cinza mostrada quando uma lista/tabela ainda não tem nada.
-const selectStyle = {
-  background: COLOR.panelAlt, border: `1px solid ${COLOR.line}`, borderRadius: 4,
-  padding: "8px 10px", color: COLOR.text, fontSize: 13, outline: "none",
-};
-
-function SectionTitle({ icon: Icon, title, sub, style }) {
-  return (
-    <div style={{ marginBottom: 12, ...style }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <Icon size={15} color={COLOR.red} />
-        <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 600, fontSize: 13.5 }}>{title}</span>
-      </div>
-      {sub && <div style={{ fontSize: 11.5, color: COLOR.textFaint, marginTop: 3, marginLeft: 23 }}>{sub}</div>}
-    </div>
-  );
-}
-
-function EmptyState({ text }) {
-  return <div style={{ fontSize: 12.5, color: COLOR.textFaint, padding: "18px 4px" }}>{text}</div>;
 }
 
 // PAINEL DE MONITORAMENTO (DASHBOARD)
@@ -1861,31 +1700,6 @@ function DataModal({ onClose, records, pending, logs }) {
   );
 }
 
-function DataTable({ cols, rows, empty }) {
-  if (rows.length === 0) return <EmptyState text={empty} />;
-  return (
-    <div style={{ overflowX: "auto" }}>
-      <table>
-        <thead>
-          <tr>
-            {cols.map((c) => (
-              <th key={c} style={{ textAlign: "left", fontFamily: FONT_MONO, fontSize: 10.5, color: COLOR.textDim, padding: "6px 10px", borderBottom: `1px solid ${COLOR.line}`, whiteSpace: "nowrap" }}>{c.toUpperCase()}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, i) => (
-            <tr key={i} style={{ background: i % 2 ? COLOR.panelAlt : "transparent" }}>
-              {row.map((cell, j) => (
-                <td key={j} style={{ padding: "7px 10px", fontSize: 12.5, borderBottom: `1px solid ${COLOR.line}`, whiteSpace: "nowrap" }}>{String(cell)}</td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
 
 // APIs
 // Aba de configuração da conexão com o backend real: URL base, ambiente e
@@ -2007,20 +1821,12 @@ function ApiTab({ online }) {
 }
 
 // USUÁRIOS
-// Tudo relacionado à governança de acesso: os 3 papéis do sistema
-// (ROLES), a cor de cada papel (roleColor), o convite por e-mail
+// Tudo relacionado à governança de acesso: os 5 papéis da API (PAPEIS, em
+// src/papeis.js), a cor de cada papel (roleColor), o convite por e-mail
 // (InviteSection) e a tela de cadastro/lista de usuários (UsersTab).
 //
-// roleColor: encadeamento de condições, Admin é vermelho, Analista é
-// azul, e qualquer outro papel (hoje só "Operador") cai no verde do
-// `return´ final.
-const ROLES = ["Operador", "Analista", "Admin"];
-
-function roleColor(papel) {
-  if (papel === "Admin") return { bg: COLOR.redTint, fg: COLOR.red };
-  if (papel === "Analista") return { bg: COLOR.blueTint, fg: COLOR.blue };
-  return { bg: COLOR.greenTint, fg: COLOR.green };
-}
+// roleColor: admin é vermelho, supervisor (gestão) é azul, especialista
+// e técnico (inspeção) são âmbar e verde; operador cai no neutro do `return` final.
 
 // Expressão regular simples para validar formato de e-mail (algo@algo.algo)
 // antes de tentar enviar o convite — não garante que o e-mail existe de
@@ -2038,7 +1844,7 @@ function InviteSection() {
   const { baseUrl } = React.useContext(IntegrationContext);
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
-  const [papel, setPapel] = useState("Operador");
+  const [papel, setPapel] = useState("operador");
   const [erro, setErro] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [convites, setConvites] = useState([]);
@@ -2083,7 +1889,7 @@ function InviteSection() {
     if (!enviadoPelaApi) {
       const assunto = encodeURIComponent("Convite de acesso — CPTM · Monitoramento Logístico de Armazém");
       const corpo = encodeURIComponent(
-        `Olá, ${nome}!\n\nVocê foi convidado(a) a acessar o sistema de Monitoramento Logístico de Armazém da CPTM, com o perfil de ${papel}.\n\nAcesse pelo link abaixo para confirmar seu cadastro:\n${link}\n\nSe você não esperava este convite, pode ignorar esta mensagem.`
+        `Olá, ${nome}!\n\nVocê foi convidado(a) a acessar o sistema de Monitoramento Logístico de Armazém da CPTM, com o perfil de ${rotuloPapel(papel)}.\n\nAcesse pelo link abaixo para confirmar seu cadastro:\n${link}\n\nSe você não esperava este convite, pode ignorar esta mensagem.`
       );
       window.open(`mailto:${email.trim()}?subject=${assunto}&body=${corpo}`, "_self");
     }
@@ -2114,7 +1920,7 @@ function InviteSection() {
         <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <Label>PAPEL</Label>
           <select value={papel} onChange={(e) => setPapel(e.target.value)} style={selectStyle}>
-            {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+            {OPCOES_PAPEL}
           </select>
         </label>
       </div>
@@ -2135,7 +1941,7 @@ function InviteSection() {
               <div key={c.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "9px 11px", background: COLOR.panelAlt, borderRadius: 4, border: `1px solid ${COLOR.line}`, flexWrap: "wrap" }}>
                 <div style={{ fontSize: 12.5 }}>
                   {c.nome} <span style={{ color: COLOR.textFaint }}>· {c.email}</span>{" "}
-                  <span style={{ fontFamily: FONT_MONO, fontSize: 9.5, padding: "1px 6px", borderRadius: 99, background: rc.bg, color: rc.fg }}>{c.papel.toUpperCase()}</span>
+                  <span style={{ fontFamily: FONT_MONO, fontSize: 9.5, padding: "1px 6px", borderRadius: 99, background: rc.bg, color: rc.fg }}>{rotuloPapel(c.papel).toUpperCase()}</span>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <span style={{ fontFamily: FONT_MONO, fontSize: 9.5, color: COLOR.textFaint }}>{c.via === "api" ? "enviado via API" : "aberto no e-mail"} · {fmtShort(c.time)}</span>
@@ -2159,13 +1965,14 @@ function InviteSection() {
 // direto no `<select>` da linha, quando a elevação de cargo acontece.
 function UsersTab() {
   const [users, setUsers] = useState([
-    { id: uid(), nome: "Ana Giulia", usuario: "ana.giulia", papel: "Admin" },
-    { id: uid(), nome: "Fernanda Rocha", usuario: "fernanda.rocha", papel: "Operador" },
-    { id: uid(), nome: "Marcos Vinícius", usuario: "marcos.vinicius", papel: "Analista" },
+    { id: uid(), nome: "Ana Giulia", usuario: "ana.giulia", papel: "admin" },
+    { id: uid(), nome: "Fernanda Rocha", usuario: "fernanda.rocha", papel: "operador" },
+    { id: uid(), nome: "Marcos Vinícius", usuario: "marcos.vinicius", papel: "supervisor" },
+    { id: uid(), nome: "Rafael Souza", usuario: "rafael.souza", papel: "tecnico" },
   ]);
   const [nome, setNome] = useState("");
   const [usuario, setUsuario] = useState("");
-  const [papel, setPapel] = useState("Operador");
+  const [papel, setPapel] = useState("operador");
 
   function adicionar() {
     // Condição: exige nome e usuário preenchidos; se qualquer um estiver
@@ -2174,7 +1981,7 @@ function UsersTab() {
     // de verdade no backend, ver POST /usuarios).
     if (!nome.trim() || !usuario.trim()) return;
     setUsers((u) => [...u, { id: uid(), nome, usuario, papel }]);
-    setNome(""); setUsuario(""); setPapel("Operador");
+    setNome(""); setUsuario(""); setPapel("operador");
   }
   // GOVERNANÇA DE PERFIS — troca de papel
   // Percorre a lista de usuários e substitui o `papel` só do usuário com o
@@ -2203,7 +2010,7 @@ function UsersTab() {
           <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <Label>PAPEL</Label>
             <select value={papel} onChange={(e) => setPapel(e.target.value)} style={selectStyle}>
-              {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+              {OPCOES_PAPEL}
             </select>
           </label>
         </div>
@@ -2213,7 +2020,7 @@ function UsersTab() {
       <InviteSection />
 
       <Panel>
-        <SectionTitle icon={ShieldAlert} title="Usuários e níveis de acesso" sub="Operador · Analista · Admin — a elevação de cargo é feita direto na tabela" />
+        <SectionTitle icon={ShieldAlert} title="Usuários e níveis de acesso" sub="Operador · Técnico · Especialista · Supervisor · Admin — a elevação de cargo é feita direto na tabela" />
         <div style={{ overflowX: "auto" }}>
           <table>
             <thead>
@@ -2232,7 +2039,7 @@ function UsersTab() {
                     <td style={{ padding: "7px 10px", fontSize: 12.5, borderBottom: `1px solid ${COLOR.line}`, fontFamily: FONT_MONO, whiteSpace: "nowrap" }}>{u.usuario}</td>
                     <td style={{ padding: "7px 10px", borderBottom: `1px solid ${COLOR.line}` }}>
                       <select value={u.papel} onChange={(e) => mudarPapel(u.id, e.target.value)} style={{ ...selectStyle, padding: "4px 8px", fontSize: 11.5, background: rc.bg, color: rc.fg, border: `1px solid ${rc.fg}33` }}>
-                        {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+                        {OPCOES_PAPEL}
                       </select>
                     </td>
                     <td style={{ padding: "7px 10px", borderBottom: `1px solid ${COLOR.line}` }}>
@@ -2265,9 +2072,9 @@ function priorityColor(p) {
   return COLOR.green;
 }
 
-function ChamadosTab() {
+function ChamadosTab({ usuario }) {
   const [tickets, setTickets] = useState([
-    { id: uid(), titulo: "App trava ao ler uma tag RFID duas vezes seguidas", descricao: "", categoria: "Bug / Erro", prioridade: "Alta", status: "Aberto", autor: TECNICO.nome, time: new Date(Date.now() - 2 * 3600000) },
+    { id: uid(), titulo: "App trava ao ler uma tag RFID duas vezes seguidas", descricao: "", categoria: "Bug / Erro", prioridade: "Alta", status: "Aberto", autor: USUARIO_DEMO.nome, time: new Date(Date.now() - 2 * 3600000) },
   ]);
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
@@ -2278,7 +2085,7 @@ function ChamadosTab() {
     // Condição: exige um título preenchido, descrição, categoria e
     // prioridade têm valores padrão, então não bloqueiam o envio.
     if (!titulo.trim()) return;
-    setTickets((t) => [{ id: uid(), titulo, descricao, categoria, prioridade, status: "Aberto", autor: TECNICO.nome, time: new Date() }, ...t]);
+    setTickets((t) => [{ id: uid(), titulo, descricao, categoria, prioridade, status: "Aberto", autor: usuario?.nome ?? "—", time: new Date() }, ...t]);
     setTitulo(""); setDescricao(""); setCategoria(CATEGORIAS[0]); setPrioridade("Média");
   }
   function resolver(id) {

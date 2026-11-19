@@ -7,7 +7,62 @@ painel de monitoramento, sincronização com credenciais de 48h e logs de
 auditoria. Os dados são fictícios (mock), prontos para depois ligar ao
 Firebase de verdade.
 
-## Login de teste
+## Rodar no computador
+
+```bash
+npm ci          # instala as dependências (node_modules não vai para o git)
+npm run dev     # abre http://localhost:5173/app.html, já com as abas de desenvolvedor
+npm test        # testes do cliente da API (test runner do Node, sem backend)
+npm run publicar  # gera a versão publicada em dist/ e atualiza o index.html da raiz
+```
+
+## API e modo demonstração
+
+O site fala com a [API REO](https://github.com/Legalso/cptm-reo-api)
+(FastAPI + Postgres), publicada na Azure em
+`https://reo-api.ambitiousbeach-eac3bf23.brazilsouth.azurecontainerapps.io`
+(documentação interativa em `/docs`). A configuração vem de variáveis do build,
+lidas em `src/config.js`:
+
+| Variável | Para que serve |
+|---|---|
+| `VITE_API_URL` | URL base da API, sem barra no fim. O build de produção usa a da Azure (arquivo `.env.production`); em `npm run dev` o padrão é a API local, `http://localhost:4000`. Para o `dev` usar a Azure, crie um `.env.local` com essa variável. |
+| `VITE_MODO_DEMO=true` | Força o modo demonstração mesmo com API configurada. |
+| `VITE_MOSTRAR_ABAS_DEV=true` | Mostra as abas de desenvolvedor no site publicado. |
+
+A API na Azure dorme quando ninguém usa: a primeira chamada depois de um
+tempo parada pode levar alguns segundos.
+
+**Modo demonstração:** sem `VITE_API_URL` (ou com `VITE_MODO_DEMO=true`), o
+site usa os dados fictícios e mostra uma faixa avisando. Nada com prefixo
+`VITE_` é segredo: tudo vai para o JavaScript público.
+
+Todas as chamadas à API passam por `src/api/cliente.js`, que manda o token,
+renova a sessão quando o access token vence (15 min) e converte os erros da
+API (`{detail, code}`) em `ErroApi`. Os tokens ficam no `sessionStorage`
+(somem ao fechar a aba).
+
+### Telas com a API (`src/telas/`)
+
+| Aba | Rota da API | Quem vê |
+|---|---|---|
+| Dormentes | `GET /dormentes` (um por tag RFID; filtros de status, espécie, local e busca por tag/ata) | todos |
+| Detalhe do dormente (clique na linha) | `GET /dormentes/{id}/historico` (movimentações, inspeções e ocorrências) | todos |
+| Retiradas (RM) | `GET /estoque/movimentacoes?kind=withdrawal` + nomes de `/locais`, `/dormentes/{id}` e `/usuarios` | todos (responsável só para supervisor/admin) |
+| Inspeções | `GET /inspecoes` (checklist e resultado; filtros de resultado e período) | todos (inspetor só para supervisor/admin) |
+| Espécies de Madeira | `GET /especies`; `POST/PATCH /especies` | todos; edição por especialista e admin |
+| Locais | `GET /locais`; `POST/PATCH /locais` | todos; edição por supervisor e admin |
+| Painel de Monitoramento | `GET /indicadores` e `GET /monitoramento/status` | supervisor, admin |
+| Usuários & Permissões | `GET/POST /usuarios`, `PATCH /usuarios/{id}/papel`, `POST /usuarios/convite` | supervisor (leitura), admin |
+| Logs e Auditoria | `GET /logs` | supervisor, admin |
+
+A paginação é feita pela API (50 por página) e o "Exportar para Excel" baixa
+todas as páginas do filtro atual. "Dormentes a Chegar" e "Suporte / Chamados"
+não têm dados na API e só aparecem no modo demonstração; Inspeções, Espécies
+e Locais só aparecem com a API. No modo demonstração todas as abas continuam
+com os dados fictícios. Espécies e locais não são apagados, são desativados.
+
+## Login de teste (modo demonstração)
 
 - Usuário: `Admin`
 - Senha: `Senha123`
@@ -15,9 +70,12 @@ Firebase de verdade.
 
 ## Perfis de acesso (governança)
 
-Em **Usuários & Permissões**: `Operador`, `Analista` e `Admin`. A troca de
-papel é feita direto na tabela (select por linha). Isso hoje é só interface
-— veja a seção de Segurança abaixo antes de tratar como controle de acesso real.
+Os mesmos 5 papéis da API (`src/papeis.js`): `operador`, `tecnico`,
+`especialista`, `supervisor` e `admin`. Com a API, o login é por matrícula ou
+e-mail e o papel vem do servidor; Painel, Logs e Usuários só aparecem para
+supervisor e admin. Esconder a aba é só conveniência: quem barra de verdade é
+a API (403). Em **Usuários & Permissões** a troca de papel ainda é local
+(modo demonstração) e será ligada a `PATCH /usuarios/{id}/papel`.
 
 ## Convite por e-mail
 
@@ -40,20 +98,46 @@ onde o site estiver hospedado no momento, trocaremos a lógica de
 ## Estrutura
 
 ```
-cptm-monitoramento/
-├── index.html          # HTML raiz carregado pelo Vite
-├── package.json        # dependências (react, recharts, lucide-react)
-├── vite.config.js       # configuração do Vite
+frontend-reo.github.io/
+├── index.html          # página publicada no GitHub Pages (aponta para dist/)
+├── app.html            # entrada do código-fonte para o Vite (npm run dev / build)
+├── favicon.png         # ícone da aba (símbolo do logo da CPTM)
+├── package.json        # dependências (react, recharts, lucide-react, write-excel-file)
+├── vite.config.js      # configuração do Vite
+├── dist/               # versão compilada que o Pages serve (gerada por npm run publicar)
+├── scripts/            # atualizar-index.mjs, usado pelo npm run publicar
 ├── src/
 │   ├── main.jsx        # ponto de entrada React
-│   └── App.jsx         # toda a aplicação (telas, dados mock, lógica)
+│   ├── config.js       # URL da API e modo demonstração
+│   ├── ui.jsx          # cores, fontes e componentes visuais compartilhados
+│   ├── excel.js        # exportação para .xlsx
+│   ├── papeis.js       # papéis do RBAC e quem vê/edita cada aba
+│   ├── rotulos.js      # enums da API em português
+│   ├── api/            # cliente HTTP, sessão (tokens), catálogos em cache e testes
+│   ├── telas/          # telas ligadas à API
+│   └── App.jsx         # menu, login, telas do modo demonstração e dados mock
 └── README.md
 ```
 
-Todo o app está em `src/App.jsx` num único arquivo para facilitar a leitura;
-os blocos de cor (objeto `COLOR` no topo do arquivo) e os dados fictícios
-(constantes `ITENS`, `TECNICO`, `LOGIN_DEMO`) ficam separados no início do
-arquivo para você editar facilmente.
+## Identidade visual
+
+As cores ficam no objeto `COLOR` de `src/ui.jsx`. O vermelho (`#E2001A`) e o
+cinza (`#707173`) foram lidos do logotipo no site da CPTM; o azul (`#1351B4`),
+o fundo e o tom de aviso vêm do mesmo site, que segue o Design System do
+gov.br. A fonte é a Rawline (também do padrão gov.br), carregada pelo CDN do
+gov.br, com IBM Plex Mono para códigos e tags. `CORES_LINHA` tem as cores
+oficiais das linhas 7, 10, 11, 12 e 13.
+
+Não encontramos manual de marca público da CPTM: confirme as cores com a
+companhia. O logotipo é o oficial da CPTM (`src/assets/logo-cptm.png`, baixado
+de cptm.sp.gov.br, recortado e com fundo transparente), usado a pedido da
+equipe do projeto; `src/assets/simbolo-cptm.png` e `favicon.png` são só o
+símbolo. No código: `MarcaSistema` (logo + nome do sistema) e `BrandMark`
+(só o símbolo, no menu recolhido). Se a CPTM fornecer o logo em SVG ou em
+resolução maior, basta trocar esses arquivos.
+
+Os dados fictícios do modo demonstração (`ITENS`, `USUARIO_DEMO`,
+`LOGIN_DEMO` e as tabelas de dormentes) ficam no início de `src/App.jsx`.
 
 ## Segurança: o que já foi tratado e o que está pendente
 
