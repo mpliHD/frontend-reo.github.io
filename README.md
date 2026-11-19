@@ -18,20 +18,24 @@ npm run publicar  # gera a versão publicada em dist/ e atualiza o index.html da
 
 ## API e modo demonstração
 
-O site está sendo ligado à [API REO](https://github.com/Legalso/cptm-reo-api)
-(FastAPI + Postgres). A configuração vem de variáveis do build, lidas em
-`src/config.js`:
+O site fala com a [API REO](https://github.com/Legalso/cptm-reo-api)
+(FastAPI + Postgres), publicada na Azure em
+`https://reo-api.ambitiousbeach-eac3bf23.brazilsouth.azurecontainerapps.io`
+(documentação interativa em `/docs`). A configuração vem de variáveis do build,
+lidas em `src/config.js`:
 
 | Variável | Para que serve |
 |---|---|
-| `VITE_API_URL` | URL base da API, sem barra no fim. Em `npm run dev` o padrão é `http://localhost:4000`. |
+| `VITE_API_URL` | URL base da API, sem barra no fim. O build de produção usa a da Azure (arquivo `.env.production`); em `npm run dev` o padrão é a API local, `http://localhost:4000`. Para o `dev` usar a Azure, crie um `.env.local` com essa variável. |
 | `VITE_MODO_DEMO=true` | Força o modo demonstração mesmo com API configurada. |
 | `VITE_MOSTRAR_ABAS_DEV=true` | Mostra as abas de desenvolvedor no site publicado. |
 
-**Modo demonstração:** sem `VITE_API_URL` (é o caso do site publicado hoje,
-porque a API ainda não tem endereço público), o site usa os dados fictícios
-e mostra uma faixa avisando. Nada com prefixo `VITE_` é segredo: tudo vai
-para o JavaScript público.
+A API na Azure dorme quando ninguém usa: a primeira chamada depois de um
+tempo parada pode levar alguns segundos.
+
+**Modo demonstração:** sem `VITE_API_URL` (ou com `VITE_MODO_DEMO=true`), o
+site usa os dados fictícios e mostra uma faixa avisando. Nada com prefixo
+`VITE_` é segredo: tudo vai para o JavaScript público.
 
 Todas as chamadas à API passam por `src/api/cliente.js`, que manda o token,
 renova a sessão quando o access token vence (15 min) e converte os erros da
