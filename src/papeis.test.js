@@ -1,6 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { PAPEIS, podeEditarEspecies, podeEditarLocais, podeVerAba, rotuloPapel, usuarioDaApi } from "./papeis.js";
+import {
+  PAPEIS, podeAlterarEspecieDormente, podeEditarEspecies, podeEditarLocais, podeInspecionar, podeRegistrarCampo,
+  podeVerAba, rotuloPapel, usuarioDaApi,
+} from "./papeis.js";
 
 test("os 5 papéis da API, sem Analista", () => {
   assert.deepEqual(PAPEIS.map((p) => p.valor), ["operador", "tecnico", "especialista", "supervisor", "admin"]);
@@ -8,8 +11,13 @@ test("os 5 papéis da API, sem Analista", () => {
   assert.equal(rotuloPapel("desconhecido"), "desconhecido");
 });
 
-test("abas de gestão só para supervisor e admin", () => {
-  for (const aba of ["dashboard", "logs", "usuarios"]) {
+test("logs e auditoria só para admin", () => {
+  assert.equal(podeVerAba("logs", "admin"), true);
+  for (const papel of ["operador", "tecnico", "especialista", "supervisor"]) assert.equal(podeVerAba("logs", papel), false, papel);
+});
+
+test("painel e usuários só para supervisor e admin", () => {
+  for (const aba of ["dashboard", "usuarios"]) {
     assert.equal(podeVerAba(aba, "admin"), true, aba);
     assert.equal(podeVerAba(aba, "supervisor"), true, aba);
     for (const papel of ["operador", "tecnico", "especialista"]) assert.equal(podeVerAba(aba, papel), false, `${aba}/${papel}`);
@@ -30,4 +38,11 @@ test("quem edita espécies e locais", () => {
 test("usuarioDaApi traduz os campos", () => {
   const u = usuarioDaApi({ id: "1", name: "Ana", registration: "RL-1", email: "a@b.c", role: "tecnico", active: true });
   assert.deepEqual(u, { id: "1", nome: "Ana", matricula: "RL-1", email: "a@b.c", papel: "tecnico" });
+});
+
+test("quem registra dados de campo, inspeciona e troca espécie", () => {
+  const todos = PAPEIS.map((p) => p.valor);
+  assert.deepEqual(todos.filter(podeRegistrarCampo), ["operador", "tecnico", "especialista", "admin"]);
+  assert.deepEqual(todos.filter(podeInspecionar), ["tecnico", "especialista", "admin"]);
+  assert.deepEqual(todos.filter(podeAlterarEspecieDormente), ["especialista", "admin"]);
 });

@@ -1,7 +1,8 @@
 // COMPONENTES VISUAIS COMPARTILHADOS
 // Cores, fontes e peças de interface usadas por todas as telas (App.jsx e
 // src/telas/). Saíram do App.jsx sem mudança de comportamento.
-import { AlertTriangle } from "lucide-react";
+import { useState } from "react";
+import { AlertTriangle, Eye, EyeOff } from "lucide-react";
 // Logotipo oficial da CPTM (baixado de cptm.sp.gov.br em 2026-11-05, recortado
 // e com o fundo branco tornado transparente) e o símbolo dele, sozinho.
 // Arquivos pequenos: o Vite embute os dois no JavaScript, sem pedido extra.
@@ -43,11 +44,12 @@ export const COLOR = {
   textFaint: "#888A8E", // mais escuro que antes (#9AA0A8) para ler melhor em fundo branco
 };
 
-// Rawline é a fonte do site da CPTM (padrão gov.br); o monoespaçado continua
-// IBM Plex Mono, usado em códigos, tags RFID e números.
-export const FONT_DISPLAY = "'Rawline', 'Raleway', sans-serif";
-export const FONT_MONO = "'IBM Plex Mono', monospace";
-export const FONT_BODY = "'Rawline', 'Raleway', sans-serif";
+// Roboto em toda a interface (padrão do Android, que os operadores já usam no
+// celular). Roboto Mono só para dados que são código: tag RFID, RM, matrícula,
+// IDs; rótulos e textos de apoio ficam na fonte normal, sem caixa alta.
+export const FONT_DISPLAY = "'Roboto', system-ui, -apple-system, 'Segoe UI', sans-serif";
+export const FONT_BODY = FONT_DISPLAY;
+export const FONT_CODE = "'Roboto Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace";
 
 // Cores oficiais das linhas da CPTM (variáveis --corLinhaN do site da CPTM).
 // Linha que não está aqui aparece em cinza.
@@ -61,16 +63,14 @@ export const CORES_LINHA = {
 
 // FONTES E ESTILOS GLOBAIS
 // Este componente só existe para injetar um bloco <style> com: a importação
-// das fontes (Rawline pelo CDN do Design System gov.br e IBM Plex Mono pelo
-// Google Fonts), um reset básico, e as @keyframes das
+// das fontes (Roboto e Roboto Mono pelo Google Fonts), um reset básico, e as @keyframes das
 // animações usadas em vários lugares (pulso do indicador de status, entrada
 // suave de painéis, giro do ícone de carregamento, etc.). É renderizado uma
 // vez em cada tela principal (Login e App). Depois se quisermos deixar mais sofisticado
 // podemos mexer aqui
 export const FontLoader = () => (
   <style>{`
-    @import url('https://cdngovbr-ds.estaleiro.serpro.gov.br/design-system/fonts/rawline/css/rawline.css');
-    @import url('https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap');
     * { box-sizing: border-box; }
     html, body, #root { margin: 0; height: 100%; }
     body { background: ${COLOR.bg}; color: ${COLOR.text}; }
@@ -106,14 +106,14 @@ export function BrandMark({ size = 30 }) {
   return <img src={simboloCptm} width={size} height={size} alt="CPTM" style={{ display: "block", flexShrink: 0 }} />;
 }
 
-export function MarcaSistema({ altura = 30, cartao = false, corTexto = COLOR.textDim, subtitulo = "MONITORAMENTO LOGÍSTICO" }) {
+export function MarcaSistema({ altura = 30, cartao = false, corTexto = COLOR.textDim, subtitulo = "Monitoramento logístico" }) {
   const logo = <img src={logoCptm} alt="CPTM" style={{ height: altura, width: "auto", display: "block" }} />;
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
       {cartao ? <div style={{ background: "#fff", borderRadius: 6, padding: "6px 10px" }}>{logo}</div> : logo}
       <div style={{ borderLeft: `1px solid ${cartao ? "rgba(255,255,255,.4)" : COLOR.line}`, paddingLeft: 12, minWidth: 0 }}>
-        <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 13, lineHeight: 1.15, color: cartao ? "#fff" : COLOR.text, whiteSpace: "nowrap" }}>ARMAZÉM</div>
-        <div style={{ fontFamily: FONT_MONO, fontSize: 9.5, letterSpacing: 0.4, color: corTexto, whiteSpace: "nowrap" }}>{subtitulo}</div>
+        <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 14, lineHeight: 1.2, color: cartao ? "#fff" : COLOR.text, whiteSpace: "nowrap" }}>Armazém</div>
+        <div style={{ fontFamily: FONT_BODY, fontSize: 11.5, color: corTexto, whiteSpace: "nowrap" }}>{subtitulo}</div>
       </div>
     </div>
   );
@@ -174,7 +174,7 @@ export function Panel({ children, style, accent }) {
 
 export function Label({ children, tone }) {
   return (
-    <span style={{ fontFamily: FONT_MONO, fontSize: 11, letterSpacing: 0.4, color: tone || COLOR.textDim }}>
+    <span style={{ fontFamily: FONT_BODY, fontSize: 12.5, fontWeight: 500, color: tone || COLOR.textDim }}>
       {children}
     </span>
   );
@@ -186,22 +186,58 @@ export function Label({ children, tone }) {
 //   contorno, subtle = cinza claro), e um estado `small` para versões
 //   compactas usadas dentro de tabelas/listas.
 export function Field({ label, value, onChange, placeholder, type = "text", mono }) {
+  const estilo = {
+    background: COLOR.panelAlt, border: `1px solid ${COLOR.line}`, borderRadius: 4,
+    padding: "10px 12px", color: COLOR.text, fontSize: 14, fontFamily: mono ? FONT_CODE : FONT_BODY, outline: "none",
+  };
+  const foco = {
+    onFocus: (e) => (e.target.style.borderColor = COLOR.red),
+    onBlur: (e) => (e.target.style.borderColor = COLOR.line),
+  };
   return (
     <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <span style={{ fontFamily: FONT_MONO, fontSize: 10.5, color: COLOR.textDim, letterSpacing: 0.4 }}>{label.toUpperCase()}</span>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        style={{
-          background: COLOR.panelAlt, border: `1px solid ${COLOR.line}`, borderRadius: 4,
-          padding: "10px 12px", color: COLOR.text, fontSize: 14, fontFamily: mono ? FONT_MONO : FONT_BODY, outline: "none",
-        }}
-        onFocus={(e) => (e.target.style.borderColor = COLOR.red)}
-        onBlur={(e) => (e.target.style.borderColor = COLOR.line)}
-      />
+      <span style={{ fontFamily: FONT_BODY, fontSize: 12.5, fontWeight: 500, color: COLOR.textDim }}>{label}</span>
+      {type === "password" ? (
+        <InputSenha value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={estilo} {...foco} />
+      ) : (
+        <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={estilo} {...foco} />
+      )}
     </label>
+  );
+}
+
+// CAMPO DE SENHA COM "MOSTRAR"
+// Input de senha com um botão de olho para ver o que foi digitado (útil no
+// celular, onde é fácil errar uma letra). O botão é type="button" para não
+// enviar o formulário, e o clique não tira o foco do campo.
+export function InputSenha({ style, ...props }) {
+  const [mostrar, setMostrar] = useState(false);
+  return (
+    <div style={{ position: "relative", display: "flex" }}>
+      <input
+        {...props}
+        type={mostrar ? "text" : "password"}
+        autoComplete={props.autoComplete ?? "current-password"}
+        autoCapitalize="off"
+        autoCorrect="off"
+        spellCheck={false}
+        style={{ ...style, width: "100%", paddingRight: 44 }}
+      />
+      <button
+        type="button"
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => setMostrar((m) => !m)}
+        aria-label={mostrar ? "Ocultar senha" : "Mostrar senha"}
+        aria-pressed={mostrar}
+        title={mostrar ? "Ocultar senha" : "Mostrar senha"}
+        style={{
+          position: "absolute", right: 0, top: 0, bottom: 0, width: 42, display: "flex", alignItems: "center", justifyContent: "center",
+          background: "none", border: "none", cursor: "pointer", color: COLOR.textDim, touchAction: "manipulation",
+        }}
+      >
+        {mostrar ? <EyeOff size={17} /> : <Eye size={17} />}
+      </button>
+    </div>
   );
 }
 
@@ -257,7 +293,7 @@ export function Selo({ texto, tom }) {
     neutro: { bg: COLOR.panelAlt, fg: COLOR.textDim },
   }[tom] || { bg: COLOR.panelAlt, fg: COLOR.textDim };
   return (
-    <span style={{ fontFamily: FONT_MONO, fontSize: 10.5, padding: "2px 8px", borderRadius: 99, background: cores.bg, color: cores.fg, whiteSpace: "nowrap" }}>
+    <span style={{ fontFamily: FONT_BODY, fontSize: 10.5, padding: "2px 8px", borderRadius: 99, background: cores.bg, color: cores.fg, whiteSpace: "nowrap" }}>
       {texto}
     </span>
   );
@@ -310,7 +346,7 @@ export function DataTable({ cols, rows, empty }) {
         <thead>
           <tr>
             {cols.map((c) => (
-              <th key={c} style={{ textAlign: "left", fontFamily: FONT_MONO, fontSize: 10.5, color: COLOR.textDim, padding: "6px 10px", borderBottom: `1px solid ${COLOR.line}`, whiteSpace: "nowrap" }}>{c.toUpperCase()}</th>
+              <th key={c} style={{ textAlign: "left", fontFamily: FONT_BODY, fontSize: 10.5, color: COLOR.textDim, padding: "6px 10px", borderBottom: `1px solid ${COLOR.line}`, whiteSpace: "nowrap" }}>{c}</th>
             ))}
           </tr>
         </thead>

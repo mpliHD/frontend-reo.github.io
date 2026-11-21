@@ -38,6 +38,7 @@ export function InspecoesApi({ usuario, onLog }) {
   const [de, setDe] = useState("");
   const [ate, setAte] = useState("");
   const [detalhe, setDetalhe] = useState(null);
+  const [recarga, setRecarga] = useState(0); // relê a tabela depois de um registro no detalhe
   const [contagem, setContagem] = useState({});
   const mostrarInspetor = podeVerAba("usuarios", usuario?.papel);
 
@@ -55,7 +56,7 @@ export function InspecoesApi({ usuario, onLog }) {
       ["approved", "rejected"].map((r) => api.get("/inspecoes", { ...periodo, result: r, limit: 1 }).then((p) => [r, p.total])),
     ).then((pares) => ativo && setContagem(Object.fromEntries(pares)), () => {});
     return () => { ativo = false; };
-  }, [periodo]);
+  }, [periodo, recarga]);
 
   const enriquecer = useCallback(
     async (itens) => {
@@ -100,6 +101,7 @@ export function InspecoesApi({ usuario, onLog }) {
         colunas={cols}
         enriquecer={enriquecer}
         onLinhaClick={(l) => setDetalhe(l.sleeper_id)}
+        recarga={recarga}
         vazio="Nenhuma inspeção com esses filtros."
         nomeArquivo="inspecoes"
         nomeAba="Inspeções"
@@ -111,11 +113,11 @@ export function InspecoesApi({ usuario, onLog }) {
               {Object.entries(RESULTADO_INSPECAO).map(([v, r]) => <option key={v} value={v}>{r.rotulo}</option>)}
             </select>
             <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <Label>DE</Label>
+              <Label>De</Label>
               <input type="date" value={de} onChange={(e) => setDe(e.target.value)} style={selectStyle} />
             </label>
             <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <Label>ATÉ</Label>
+              <Label>Até</Label>
               <input type="date" value={ate} onChange={(e) => setAte(e.target.value)} style={selectStyle} />
             </label>
             {(resultado || de || ate) && (
@@ -127,7 +129,7 @@ export function InspecoesApi({ usuario, onLog }) {
           </>
         }
       />
-      {detalhe && <DetalheDormente id={detalhe} usuario={usuario} onClose={() => setDetalhe(null)} />}
+      {detalhe && <DetalheDormente id={detalhe} usuario={usuario} onClose={() => setDetalhe(null)} onAlterado={() => setRecarga((n) => n + 1)} />}
     </div>
   );
 }

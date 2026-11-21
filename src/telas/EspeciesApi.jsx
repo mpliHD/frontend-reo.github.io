@@ -60,9 +60,9 @@ function FormEspecie({ inicial, aoSalvar, aoCancelar, onLog }) {
     <Panel accent={COLOR.green}>
       <SectionTitle icon={editando ? Pencil : Plus} title={editando ? `Editar espécie ${form.code}` : "Nova espécie"} sub="Código da ficha de dormentes e ao menos um nome" />
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginBottom: 12 }}>
-        <Campo label="CÓDIGO" value={form.code} onChange={mudar("code")} placeholder="23" disabled={editando} />
-        <Campo label="NOME CIENTÍFICO" value={form.scientific_name} onChange={mudar("scientific_name")} placeholder="Hymenaea courbaril" />
-        <Campo label="NOME POPULAR" value={form.common_name} onChange={mudar("common_name")} placeholder="Jatobá" />
+        <Campo label="Código" value={form.code} onChange={mudar("code")} placeholder="23" disabled={editando} />
+        <Campo label="Nome científico" value={form.scientific_name} onChange={mudar("scientific_name")} placeholder="Hymenaea courbaril" />
+        <Campo label="Nome popular" value={form.common_name} onChange={mudar("common_name")} placeholder="Jatobá" />
       </div>
       {erro && <div role="alert" style={{ color: COLOR.red, fontSize: 12, marginBottom: 10 }}>{erro}</div>}
       <div style={{ display: "flex", gap: 8 }}>

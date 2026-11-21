@@ -33,6 +33,7 @@ export function RetiradasApi({ usuario, onLog }) {
   const [ate, setAte] = useState("");
   const [total, setTotal] = useState(null);
   const [detalhe, setDetalhe] = useState(null);
+  const [recarga, setRecarga] = useState(0); // relê a tabela depois de um registro no detalhe
   const mostrarResponsavel = podeVerAba("usuarios", usuario?.papel);
 
   // `ate` é inclusivo na tela (o dia inteiro) e exclusivo na API: soma 1 dia.
@@ -87,6 +88,7 @@ export function RetiradasApi({ usuario, onLog }) {
         enriquecer={enriquecer}
         aoCarregar={setTotal}
         onLinhaClick={(l) => setDetalhe(l.sleeper_id)}
+        recarga={recarga}
         vazio="Nenhuma retirada registrada nesse período."
         nomeArquivo="retiradas_rm"
         nomeAba="Retiradas (RM)"
@@ -94,11 +96,11 @@ export function RetiradasApi({ usuario, onLog }) {
         filtros={
           <>
             <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <Label>DE</Label>
+              <Label>De</Label>
               <input type="date" value={de} onChange={(e) => setDe(e.target.value)} style={selectStyle} />
             </label>
             <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <Label>ATÉ</Label>
+              <Label>Até</Label>
               <input type="date" value={ate} onChange={(e) => setAte(e.target.value)} style={selectStyle} />
             </label>
             {(de || ate) && (
@@ -110,7 +112,7 @@ export function RetiradasApi({ usuario, onLog }) {
           </>
         }
       />
-      {detalhe && <DetalheDormente id={detalhe} usuario={usuario} onClose={() => setDetalhe(null)} />}
+      {detalhe && <DetalheDormente id={detalhe} usuario={usuario} onClose={() => setDetalhe(null)} onAlterado={() => setRecarga((n) => n + 1)} />}
     </div>
   );
 }

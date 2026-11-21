@@ -10,7 +10,7 @@ import { Link2, Loader2, Mail, Plus, Search, Send, ShieldAlert, Users, X } from 
 import { api } from "../api/index.js";
 import { PAPEIS, rotuloPapel } from "../papeis.js";
 import { data } from "../rotulos.js";
-import { Btn, COLOR, FONT_MONO, Label, OPCOES_PAPEL, Panel, SectionTitle, fmtShort, roleColor, selectStyle } from "../ui.jsx";
+import { Btn, InputSenha, COLOR, FONT_BODY, Label, OPCOES_PAPEL, Panel, SectionTitle, fmtShort, roleColor, selectStyle } from "../ui.jsx";
 import { TabelaApi, useAtrasado } from "./TabelaApi.jsx";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -32,7 +32,7 @@ function Campo({ label, ...props }) {
   return (
     <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <Label>{label}</Label>
-      <input {...props} style={selectStyle} />
+      {props.type === "password" ? <InputSenha {...props} style={selectStyle} /> : <input {...props} style={selectStyle} />}
     </label>
   );
 }
@@ -68,12 +68,12 @@ function NovoUsuario({ aoCriar, onLog }) {
     <Panel accent={COLOR.red}>
       <SectionTitle icon={Users} title="Adicionar usuário" sub="Cria a conta já com senha e papel (POST /usuarios)" />
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginBottom: 12 }}>
-        <Campo label="NOME" value={form.name} onChange={mudar("name")} placeholder="Nome completo" />
-        <Campo label="E-MAIL" value={form.email} onChange={mudar("email")} placeholder="nome@cptm.sp.gov.br" type="email" />
-        <Campo label="MATRÍCULA" value={form.registration} onChange={mudar("registration")} placeholder="RL-8842" />
-        <Campo label="SENHA INICIAL" value={form.password} onChange={mudar("password")} placeholder="mínimo 8 caracteres" type="password" autoComplete="new-password" />
+        <Campo label="Nome" value={form.name} onChange={mudar("name")} placeholder="Nome completo" />
+        <Campo label="E-mail" value={form.email} onChange={mudar("email")} placeholder="nome@cptm.sp.gov.br" type="email" />
+        <Campo label="Matrícula" value={form.registration} onChange={mudar("registration")} placeholder="RL-8842" />
+        <Campo label="Senha inicial" value={form.password} onChange={mudar("password")} placeholder="mínimo 8 caracteres" type="password" autoComplete="new-password" />
         <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <Label>PAPEL</Label>
+          <Label>Papel</Label>
           <select value={form.role} onChange={mudar("role")} style={selectStyle}>{OPCOES_PAPEL}</select>
         </label>
       </div>
@@ -125,10 +125,10 @@ function Convite({ onLog }) {
     <Panel accent={COLOR.blue}>
       <SectionTitle icon={Mail} title="Convidar por e-mail" sub="A API gera o link de convite; o seu programa de e-mail abre com a mensagem pronta" />
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginBottom: 10 }}>
-        <Campo label="NOME" value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Nome completo" />
-        <Campo label="E-MAIL" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nome@cptm.sp.gov.br" type="email" />
+        <Campo label="Nome" value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Nome completo" />
+        <Campo label="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nome@cptm.sp.gov.br" type="email" />
         <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <Label>PAPEL</Label>
+          <Label>Papel</Label>
           <select value={papel} onChange={(e) => setPapel(e.target.value)} style={selectStyle}>{OPCOES_PAPEL}</select>
         </label>
       </div>
@@ -143,10 +143,10 @@ function Convite({ onLog }) {
               <div key={c.token} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "9px 11px", background: COLOR.panelAlt, borderRadius: 4, border: `1px solid ${COLOR.line}`, flexWrap: "wrap" }}>
                 <div style={{ fontSize: 12.5 }}>
                   {c.name} <span style={{ color: COLOR.textFaint }}>· {c.email}</span>{" "}
-                  <span style={{ fontFamily: FONT_MONO, fontSize: 9.5, padding: "1px 6px", borderRadius: 99, background: rc.bg, color: rc.fg }}>{rotuloPapel(c.role).toUpperCase()}</span>
+                  <span style={{ fontFamily: FONT_BODY, fontSize: 9.5, padding: "1px 6px", borderRadius: 99, background: rc.bg, color: rc.fg }}>{rotuloPapel(c.role)}</span>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontFamily: FONT_MONO, fontSize: 9.5, color: COLOR.textFaint }}>gerado às {fmtShort(c.quando)}</span>
+                  <span style={{ fontFamily: FONT_BODY, fontSize: 9.5, color: COLOR.textFaint }}>gerado às {fmtShort(c.quando)}</span>
                   <button onClick={() => copiar(c.link)} title="Copiar link do convite" style={{ background: "none", border: `1px solid ${COLOR.line}`, borderRadius: 4, padding: "4px 8px", cursor: "pointer", color: COLOR.textDim, display: "flex", alignItems: "center", gap: 4, fontSize: 10.5 }}>
                     <Link2 size={12} /> {copiado === c.link ? "copiado" : "copiar link"}
                   </button>
@@ -190,7 +190,7 @@ export function UsuariosApi({ usuario, onLog }) {
         const rc = roleColor(u.role);
         // Condição: só o admin troca papel (a API devolveria 403 para os outros).
         if (!ehAdmin) {
-          return <span style={{ fontFamily: FONT_MONO, fontSize: 10, padding: "2px 8px", borderRadius: 99, background: rc.bg, color: rc.fg }}>{rotuloPapel(u.role).toUpperCase()}</span>;
+          return <span style={{ fontFamily: FONT_BODY, fontSize: 10, padding: "2px 8px", borderRadius: 99, background: rc.bg, color: rc.fg }}>{rotuloPapel(u.role)}</span>;
         }
         return (
           <select value={u.role} onChange={(e) => mudarPapel(u, e.target.value)} style={{ ...selectStyle, padding: "4px 8px", fontSize: 11.5, background: rc.bg, color: rc.fg, border: `1px solid ${rc.fg}33` }}>

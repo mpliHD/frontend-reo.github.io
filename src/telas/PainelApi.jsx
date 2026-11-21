@@ -7,15 +7,42 @@ import { useEffect, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Activity, AlertTriangle, ClipboardList, Clock, LayoutDashboard, Loader2, Server, Timer, Warehouse, XCircle } from "lucide-react";
 import { api } from "../api/index.js";
-import { STATUS_DORMENTE, TIPO_OCORRENCIA, duracao, rotulo } from "../rotulos.js";
-import { COLOR, EmptyState, FONT_DISPLAY, FONT_MONO, Panel, SectionTitle, SignalDot, selectStyle } from "../ui.jsx";
+import { STATUS_DORMENTE, TIPO_OCORRENCIA, duracao, inicioDoDia, rotulo } from "../rotulos.js";
+import { COLOR, EmptyState, FONT_DISPLAY, FONT_BODY, Label, Panel, SectionTitle, SignalDot, selectStyle } from "../ui.jsx";
 import { mensagemErro } from "./TabelaApi.jsx";
 
+// Atalhos de período; "personalizado" abre os campos de data. A API aceita
+// no máximo 366 dias por consulta (code period_too_long).
 const PERIODOS = [
-  { dias: 7, rotulo: "Últimos 7 dias" },
-  { dias: 30, rotulo: "Últimos 30 dias" },
-  { dias: 90, rotulo: "Últimos 90 dias" },
+  { valor: "7", rotulo: "Últimos 7 dias" },
+  { valor: "30", rotulo: "Últimos 30 dias" },
+  { valor: "90", rotulo: "Últimos 90 dias" },
+  { valor: "365", rotulo: "Últimos 12 meses" },
+  { valor: "personalizado", rotulo: "Período personalizado…" },
 ];
+const MAX_DIAS = 366;
+
+// "2026-11-20" de hoje, no fuso do navegador (valor padrão dos campos de data).
+function hojeTexto(somarDias = 0) {
+  const d = new Date();
+  d.setDate(d.getDate() + somarDias);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+// Período escolhido → { de, ate } para a API, ou { erro } se não for válido.
+// No personalizado, "até" é o dia inteiro (a API usa `ate` exclusivo).
+function periodoDaEscolha(escolha, deTexto, ateTexto) {
+  if (escolha !== "personalizado") {
+    const ate = new Date();
+    return { de: new Date(ate.getTime() - Number(escolha) * 86400000), ate };
+  }
+  if (!deTexto || !ateTexto) return { erro: "Escolha as duas datas." };
+  if (ateTexto < deTexto) return { erro: "A data final precisa ser igual ou depois da inicial." };
+  const de = inicioDoDia(deTexto);
+  const ate = inicioDoDia(ateTexto, 1);
+  if ((new Date(ate) - new Date(de)) / 86400000 > MAX_DIAS) return { erro: "O período pode ter no máximo 366 dias." };
+  return { de, ate };
+}
 
 const fmt = (n, casas = 0) => (n ?? 0).toLocaleString("pt-BR", { minimumFractionDigits: casas, maximumFractionDigits: casas });
 
@@ -77,7 +104,7 @@ function SaudeApi() {
             <SignalDot status={l.status} />
             <div>
               <div style={{ fontSize: 12.5 }}>{l.label}</div>
-              <div style={{ fontFamily: FONT_MONO, fontSize: 10.5, color: COLOR.textFaint }}>{l.detail}</div>
+              <div style={{ fontFamily: FONT_BODY, fontSize: 10.5, color: COLOR.textFaint }}>{l.detail}</div>
             </div>
           </div>
         ))}
@@ -87,22 +114,30 @@ function SaudeApi() {
 }
 
 export function PainelApi() {
-  const [dias, setDias] = useState(7);
+  const [escolha, setEscolha] = useState("7");
+  const [deTexto, setDeTexto] = useState(hojeTexto(-30));
+  const [ateTexto, setAteTexto] = useState(hojeTexto());
+  const periodo = periodoDaEscolha(escolha, deTexto, ateTexto);
+  const chavePeriodo = escolha === "personalizado" ? `${deTexto}|${ateTexto}` : escolha;
   const [ind, setInd] = useState(null);
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
+    if (periodo.erro) return undefined; // datas incompletas ou inválidas: espera corrigir
     let ativo = true;
     setCarregando(true);
     setErro("");
-    const ate = new Date();
-    const de = new Date(ate.getTime() - dias * 86400000);
-    api.get("/indicadores", { de, ate })
+    api.get("/indicadores", { de: periodo.de, ate: periodo.ate })
       .then((r) => ativo && setInd(r), (e) => ativo && setErro(mensagemErro(e)))
       .finally(() => ativo && setCarregando(false));
     return () => { ativo = false; };
-  }, [dias]);
+    // O período entra pela chave (texto): um objeto novo com as mesmas datas não refaz a consulta.
+  }, [chavePeriodo, periodo.erro]);
+
+  const rotuloPeriodo = escolha === "personalizado"
+    ? `${deTexto.split("-").reverse().join("/")} a ${ateTexto.split("-").reverse().join("/")}`
+    : PERIODOS.find((p) => p.valor === escolha)?.rotulo;
 
   const porStatus = Object.fromEntries((ind?.sleepers_by_status ?? []).map((s) => [s.status, s.count]));
   const kpis = ind
@@ -123,11 +158,25 @@ export function PainelApi() {
         <SectionTitle icon={LayoutDashboard} title="Painel de monitoramento" sub="Retrato atual dos dormentes e atividade no período" style={{ marginBottom: 0 }} />
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {carregando && <Loader2 size={14} className="spin" color={COLOR.textFaint} />}
-          <select value={dias} onChange={(e) => setDias(Number(e.target.value))} style={selectStyle} title="Período">
-            {PERIODOS.map((p) => <option key={p.dias} value={p.dias}>{p.rotulo}</option>)}
+          <select value={escolha} onChange={(e) => setEscolha(e.target.value)} style={selectStyle} title="Período dos gráficos">
+            {PERIODOS.map((p) => <option key={p.valor} value={p.valor}>{p.rotulo}</option>)}
           </select>
         </div>
       </div>
+
+      {escolha === "personalizado" && (
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "flex-end", gap: 10, marginTop: -8 }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <Label>De</Label>
+            <input type="date" value={deTexto} max={ateTexto || undefined} onChange={(e) => setDeTexto(e.target.value)} style={selectStyle} />
+          </label>
+          <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <Label>Até</Label>
+            <input type="date" value={ateTexto} min={deTexto || undefined} onChange={(e) => setAteTexto(e.target.value)} style={selectStyle} />
+          </label>
+          {periodo.erro && <span role="alert" style={{ color: COLOR.red, fontSize: 12 }}>{periodo.erro}</span>}
+        </div>
+      )}
 
       {erro && <Panel accent={COLOR.red}><div role="alert" style={{ color: COLOR.red, fontSize: 12.5 }}>{erro}</div></Panel>}
 
@@ -148,7 +197,7 @@ export function PainelApi() {
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 18, alignItems: "start" }}>
             <Panel>
-              <SectionTitle icon={Activity} title="Movimentações por dia" sub={PERIODOS.find((p) => p.dias === dias)?.rotulo} />
+              <SectionTitle icon={Activity} title="Movimentações por dia" sub={rotuloPeriodo} />
               <Grafico
                 dados={ind.movements_per_day.map((d) => ({ ...d, nome: diaCurto(d.day) }))}
                 barras={[
@@ -207,7 +256,7 @@ export function PainelApi() {
             <SaudeApi />
             <Panel>
               <SectionTitle icon={Clock} title="Período consultado" />
-              <div style={{ fontFamily: FONT_MONO, fontSize: 11.5, color: COLOR.textDim, lineHeight: 1.8 }}>
+              <div style={{ fontFamily: FONT_BODY, fontSize: 11.5, color: COLOR.textDim, lineHeight: 1.8 }}>
                 de {new Date(ind.period.start).toLocaleString("pt-BR")}<br />
                 até {new Date(ind.period.end).toLocaleString("pt-BR")}
               </div>

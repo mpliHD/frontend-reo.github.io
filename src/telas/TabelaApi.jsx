@@ -15,7 +15,7 @@ import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Download, Loader2 } from "lucide-react";
 import { api } from "../api/index.js";
 import { baixarExcel, formatarValor } from "../excel.js";
-import { Btn, COLOR, EmptyState, FONT_BODY, FONT_MONO, Panel, Selo } from "../ui.jsx";
+import { Btn, COLOR, EmptyState, FONT_BODY, Panel, Selo, FONT_CODE } from "../ui.jsx";
 
 const POR_PAGINA = 50;
 
@@ -89,7 +89,7 @@ export function TabelaApi({ caminho, consulta, colunas, enriquecer = semEnriquec
       {filtros && <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 12 }}>{filtros}</div>}
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-        <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: COLOR.textDim, display: "flex", alignItems: "center", gap: 6 }}>
+        <span style={{ fontFamily: FONT_BODY, fontSize: 11, color: COLOR.textDim, display: "flex", alignItems: "center", gap: 6 }}>
           {carregando && <Loader2 size={12} className="spin" />}
           {pagina.total ? `${offset + 1}–${fim} de ${pagina.total.toLocaleString("pt-BR")} registros` : "0 registros"}
         </span>
@@ -120,11 +120,11 @@ export function TabelaApi({ caminho, consulta, colunas, enriquecer = semEnriquec
                     key={c.key}
                     style={{
                       position: "sticky", top: 0, zIndex: 1, background: COLOR.panelAlt,
-                      textAlign: c.formato === "numero" ? "right" : "left", fontFamily: FONT_MONO, fontSize: 10.5, color: COLOR.textDim,
+                      textAlign: c.formato === "numero" ? "right" : "left", fontFamily: FONT_BODY, fontSize: 10.5, color: COLOR.textDim,
                       padding: "8px 10px", borderBottom: `1px solid ${COLOR.line}`, whiteSpace: "nowrap",
                     }}
                   >
-                    {c.label.toUpperCase()}
+                    {c.label}
                   </th>
                 ))}
               </tr>
@@ -144,7 +144,7 @@ export function TabelaApi({ caminho, consulta, colunas, enriquecer = semEnriquec
                         title={c.dica ? c.dica(linha) : undefined}
                         style={{
                           padding: "7px 10px", fontSize: 12.5, borderBottom: `1px solid ${COLOR.line}`, whiteSpace: "nowrap",
-                          textAlign: c.formato === "numero" ? "right" : "left", fontFamily: c.mono ? FONT_MONO : FONT_BODY,
+                          textAlign: c.formato === "numero" ? "right" : "left", fontFamily: c.mono ? FONT_CODE : FONT_BODY,
                           color: v === "" || v === null || v === undefined ? COLOR.textFaint : COLOR.text,
                           maxWidth: c.larguraTela, overflow: "hidden", textOverflow: "ellipsis",
                         }}

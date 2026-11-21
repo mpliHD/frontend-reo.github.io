@@ -8,7 +8,7 @@ import { MODO_DEMO } from "../config.js";
 import { api } from "../api/index.js";
 import { lerConvite } from "../convite.js";
 import { rotuloPapel, usuarioDaApi } from "../papeis.js";
-import { MarcaSistema, Btn, COLOR, FONT_BODY, FONT_DISPLAY, FONT_MONO, Field, FontLoader, Label, Panel } from "../ui.jsx";
+import { MarcaSistema, Btn, COLOR, FONT_BODY, FONT_DISPLAY, Field, FontLoader, Label, Panel } from "../ui.jsx";
 
 function mensagemErro(erro) {
   if (erro.code === "token_expired") return "Este convite expirou. Peça um novo convite ao administrador.";
@@ -59,7 +59,7 @@ export function AceiteConvite({ token, onAceito, onIrParaLogin }) {
           <div style={{ color: COLOR.textDim }}>{convite.email}</div>
           <div style={{ color: COLOR.textDim }}>Perfil: {rotuloPapel(convite.papel)}{convite.matricula ? ` · matrícula ${convite.matricula}` : ""}</div>
           {convite.expiraEm && (
-            <div style={{ fontFamily: FONT_MONO, fontSize: 10.5, color: vencido ? COLOR.red : COLOR.textFaint }}>
+            <div style={{ fontFamily: FONT_BODY, fontSize: 10.5, color: vencido ? COLOR.red : COLOR.textFaint }}>
               {vencido ? "venceu em" : "válido até"} {convite.expiraEm.toLocaleString("pt-BR")}
             </div>
           )}
@@ -94,7 +94,7 @@ export function AceiteConvite({ token, onAceito, onIrParaLogin }) {
             Já tenho conta: ir para o login
           </button>
         </div>
-        <div style={{ marginTop: 6, textAlign: "center" }}><Label>O CONVITE CRIA SUA CONTA COM O PERFIL DEFINIDO PELO ADMINISTRADOR</Label></div>
+        <div style={{ marginTop: 6, textAlign: "center" }}><Label>O convite cria sua conta com o perfil definido pelo administrador</Label></div>
       </div>
     </div>
   );

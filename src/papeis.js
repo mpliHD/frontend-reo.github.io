@@ -15,12 +15,12 @@ export function rotuloPapel(valor) {
   return PAPEIS.find((p) => p.valor === valor)?.rotulo ?? valor;
 }
 
-// Abas que exigem papel de gestão. Espelha o require_roles das rotas que cada
-// aba usa (/indicadores, /logs e GET /usuarios aceitam só supervisor e admin).
-// Aba que não está aqui é liberada para todos os papéis logados.
+// Abas restritas: papéis que podem abrir cada uma, além do admin. Espelha o
+// require_roles das rotas que a aba usa (/indicadores e GET /usuarios aceitam
+// supervisor e admin; /logs, só admin). Aba fora daqui: todos os papéis logados.
 const ABAS_RESTRITAS = {
   dashboard: ["supervisor"],
-  logs: ["supervisor"],
+  logs: [], // auditoria: só admin (decisão de 2026-11-20)
   usuarios: ["supervisor"],
 };
 
@@ -35,6 +35,13 @@ export function podeVerAba(aba, papel) {
 // SPECIES_ROLES e MANAGEMENT_ROLES de app/core/permissions.py da API.
 export const podeEditarEspecies = (papel) => papel === "admin" || papel === "especialista";
 export const podeEditarLocais = (papel) => papel === "admin" || papel === "supervisor";
+
+// Registro de dados de campo (cadastrar dormente, movimentar, ocorrência):
+// FIELD_ROLES da API. Supervisor só lê. Inspeção e mudança manual de status:
+// INSPECTION_ROLES. Trocar a espécie de um dormente: SPECIES_ROLES.
+export const podeRegistrarCampo = (papel) => ["admin", "operador", "tecnico", "especialista"].includes(papel);
+export const podeInspecionar = (papel) => ["admin", "tecnico", "especialista"].includes(papel);
+export const podeAlterarEspecieDormente = podeEditarEspecies;
 
 // Converte o usuário da API ({name, registration, role, ...}) para os nomes
 // usados nas telas do site.

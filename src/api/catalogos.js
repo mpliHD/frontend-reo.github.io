@@ -54,6 +54,11 @@ export async function carregarDormentes(ids) {
   return dormentes;
 }
 
+// Dormente editado/movimentado: some do cache para as tabelas lerem de novo.
+export function esquecerDormente(id) {
+  dormentes.delete(id);
+}
+
 // Depois de criar/editar um local ou espécie, a próxima tela busca de novo.
 export function esquecerCatalogo(chave) {
   cache.delete(chave);
