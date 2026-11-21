@@ -8,8 +8,13 @@ test("os 5 papéis da API, sem Analista", () => {
   assert.equal(rotuloPapel("desconhecido"), "desconhecido");
 });
 
-test("abas de gestão só para supervisor e admin", () => {
-  for (const aba of ["dashboard", "logs", "usuarios"]) {
+test("logs e auditoria só para admin", () => {
+  assert.equal(podeVerAba("logs", "admin"), true);
+  for (const papel of ["operador", "tecnico", "especialista", "supervisor"]) assert.equal(podeVerAba("logs", papel), false, papel);
+});
+
+test("painel e usuários só para supervisor e admin", () => {
+  for (const aba of ["dashboard", "usuarios"]) {
     assert.equal(podeVerAba(aba, "admin"), true, aba);
     assert.equal(podeVerAba(aba, "supervisor"), true, aba);
     for (const papel of ["operador", "tecnico", "especialista"]) assert.equal(podeVerAba(aba, papel), false, `${aba}/${papel}`);

@@ -54,7 +54,7 @@ API (`{detail, code}`) em `ErroApi`. Os tokens ficam no `sessionStorage`
 | Locais | `GET /locais`; `POST/PATCH /locais` | todos; edição por supervisor e admin |
 | Painel de Monitoramento | `GET /indicadores` e `GET /monitoramento/status` | supervisor, admin |
 | Usuários & Permissões | `GET/POST /usuarios`, `PATCH /usuarios/{id}/papel`, `POST /usuarios/convite` | supervisor (leitura), admin |
-| Logs e Auditoria | `GET /logs` | supervisor, admin |
+| Logs e Auditoria | `GET /logs` | só admin |
 
 A paginação é feita pela API (50 por página) e o "Exportar para Excel" baixa
 todas as páginas do filtro atual. "Dormentes a Chegar" e "Suporte / Chamados"
@@ -72,8 +72,8 @@ com os dados fictícios. Espécies e locais não são apagados, são desativados
 
 Os mesmos 5 papéis da API (`src/papeis.js`): `operador`, `tecnico`,
 `especialista`, `supervisor` e `admin`. Com a API, o login é por matrícula ou
-e-mail e o papel vem do servidor; Painel, Logs e Usuários só aparecem para
-supervisor e admin. Esconder a aba é só conveniência: quem barra de verdade é
+e-mail e o papel vem do servidor; Painel e Usuários só aparecem para
+supervisor e admin, e Logs só para admin. Esconder a aba é só conveniência: quem barra de verdade é
 a API (403). Em **Usuários & Permissões** a troca de papel ainda é local
 (modo demonstração) e será ligada a `PATCH /usuarios/{id}/papel`.
 

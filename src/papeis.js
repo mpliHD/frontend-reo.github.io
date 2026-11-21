@@ -15,12 +15,12 @@ export function rotuloPapel(valor) {
   return PAPEIS.find((p) => p.valor === valor)?.rotulo ?? valor;
 }
 
-// Abas que exigem papel de gestão. Espelha o require_roles das rotas que cada
-// aba usa (/indicadores, /logs e GET /usuarios aceitam só supervisor e admin).
-// Aba que não está aqui é liberada para todos os papéis logados.
+// Abas restritas: papéis que podem abrir cada uma, além do admin. Espelha o
+// require_roles das rotas que a aba usa (/indicadores e GET /usuarios aceitam
+// supervisor e admin; /logs, só admin). Aba fora daqui: todos os papéis logados.
 const ABAS_RESTRITAS = {
   dashboard: ["supervisor"],
-  logs: ["supervisor"],
+  logs: [], // auditoria: só admin (decisão de 2026-11-20)
   usuarios: ["supervisor"],
 };
 
