@@ -22,7 +22,7 @@ import { API_URL, MODO_DEMO } from "./config.js";
 import { api } from "./api/index.js";
 import { podeVerAba, rotuloPapel, usuarioDaApi } from "./papeis.js";
 import {
-  COLOR, FONT_DISPLAY, FONT_MONO, FONT_BODY, FontLoader, BrandMark, MarcaSistema, fmtTime, fmtShort, uid, SignalDot, Panel, Label, Field, Btn, FaixaDemo, Selo, SeloLinha, selectStyle, SectionTitle, EmptyState, DataTable, roleColor, OPCOES_PAPEL,
+  COLOR, FONT_DISPLAY, FONT_BODY, FontLoader, BrandMark, MarcaSistema, fmtTime, fmtShort, uid, SignalDot, Panel, Label, Field, Btn, FaixaDemo, Selo, SeloLinha, selectStyle, SectionTitle, EmptyState, DataTable, roleColor, OPCOES_PAPEL, FONT_CODE,
 } from "./ui.jsx";
 import { formatarValor, celulaExcel, baixarExcel } from "./excel.js";
 // Telas ligadas à API (usadas fora do modo demonstração).
@@ -202,7 +202,7 @@ function LoginScreen({ online, onSuccess, aviso }) {
             </div>
           </div>
 
-          <div style={{ position: "relative", zIndex: 1, fontFamily: FONT_MONO, fontSize: 10, opacity: 0.7 }}>
+          <div style={{ position: "relative", zIndex: 1, fontFamily: FONT_BODY, fontSize: 10, opacity: 0.7 }}>
             {MODO_DEMO ? "Protótipo acadêmico · dados fictícios" : "Protótipo acadêmico"}
           </div>
         </div>
@@ -232,8 +232,8 @@ function LoginScreen({ online, onSuccess, aviso }) {
                   <div style={{ flex: 1, height: 2, background: stage === "mfa" ? COLOR.red : COLOR.line, borderRadius: 99, transition: "background .3s" }} />
                   <StepDot active={stage === "mfa"} done={false} label="2" />
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontFamily: FONT_MONO, fontSize: 9.5, color: COLOR.textFaint, marginBottom: 20 }}>
-                  <span>CREDENCIAIS</span><span>MFA</span>
+                <div style={{ display: "flex", justifyContent: "space-between", fontFamily: FONT_BODY, fontSize: 9.5, color: COLOR.textFaint, marginBottom: 20 }}>
+                  <span>Credenciais</span><span>MFA</span>
                 </div>
               </>
             )}
@@ -294,7 +294,7 @@ function LoginScreen({ online, onSuccess, aviso }) {
             </div>
           </Panel>
           {MODO_DEMO && (
-            <div style={{ textAlign: "center", marginTop: 14, fontFamily: FONT_MONO, fontSize: 10.5, color: COLOR.textFaint }}>
+            <div style={{ textAlign: "center", marginTop: 14, fontFamily: FONT_BODY, fontSize: 10.5, color: COLOR.textFaint }}>
               login de teste: <b style={{ color: COLOR.textDim }}>{LOGIN_DEMO.usuario} / {LOGIN_DEMO.senha}</b> · qualquer código de 4+ dígitos no MFA
             </div>
           )}
@@ -313,7 +313,7 @@ function StepDot({ active, done, label }) {
     <div style={{
       width: 22, height: 22, borderRadius: 99, display: "flex", alignItems: "center", justifyContent: "center",
       background: active || done ? COLOR.red : COLOR.panelAlt, color: active || done ? "#fff" : COLOR.textFaint,
-      border: `1px solid ${active || done ? COLOR.red : COLOR.line}`, fontFamily: FONT_MONO, fontSize: 11, flexShrink: 0,
+      border: `1px solid ${active || done ? COLOR.red : COLOR.line}`, fontFamily: FONT_BODY, fontSize: 11, flexShrink: 0,
       transition: "all .2s",
     }}>
       {done ? <CheckCircle2 size={13} /> : label}
@@ -879,7 +879,7 @@ function VisaoDormentes({ visao, onLog }) {
         </div>
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-          <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: COLOR.textDim }}>
+          <span style={{ fontFamily: FONT_BODY, fontSize: 11, color: COLOR.textDim }}>
             {visiveis.length} de {linhas.length} registros
           </span>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
@@ -925,11 +925,11 @@ function VisaoDormentes({ visao, onLog }) {
                         onClick={() => alternarOrdem(c.key)}
                         style={{
                           position: "sticky", top: 0, zIndex: 1, background: COLOR.panelAlt, cursor: "pointer", userSelect: "none",
-                          textAlign: direita ? "right" : "left", fontFamily: FONT_MONO, fontSize: 10.5, color: ativa ? COLOR.red : COLOR.textDim,
+                          textAlign: direita ? "right" : "left", fontFamily: FONT_BODY, fontSize: 10.5, color: ativa ? COLOR.red : COLOR.textDim,
                           padding: "8px 10px", borderBottom: `1px solid ${COLOR.line}`, whiteSpace: "nowrap",
                         }}
                       >
-                        {c.label.toUpperCase()} <SetaOrdem size={11} style={{ verticalAlign: "-1px", opacity: ativa ? 1 : 0.4 }} />
+                        {c.label} <SetaOrdem size={11} style={{ verticalAlign: "-1px", opacity: ativa ? 1 : 0.4 }} />
                       </th>
                     );
                   })}
@@ -946,7 +946,7 @@ function VisaoDormentes({ visao, onLog }) {
                           key={c.key}
                           style={{
                             padding: "7px 10px", fontSize: 12.5, borderBottom: `1px solid ${COLOR.line}`, whiteSpace: "nowrap",
-                            textAlign: direita ? "right" : "left", fontFamily: c.mono ? FONT_MONO : FONT_BODY,
+                            textAlign: direita ? "right" : "left", fontFamily: c.mono ? FONT_CODE : FONT_BODY,
                             color: v === "" || v === null ? COLOR.textFaint : COLOR.text,
                           }}
                         >
@@ -1155,7 +1155,7 @@ export default function App() {
     <>
       <div style={{ padding: showLabels ? "20px 18px" : "20px 0", display: "flex", alignItems: "center", justifyContent: showLabels ? "flex-start" : "center", gap: 10, borderBottom: `1px solid ${COLOR.line}` }}>
         {/* Menu aberto: logo completo + nome do sistema; recolhido: só o símbolo */}
-        {showLabels ? <MarcaSistema altura={22} subtitulo="MONITORAMENTO" /> : <BrandMark size={30} />}
+        {showLabels ? <MarcaSistema altura={22} subtitulo="Monitoramento" /> : <BrandMark size={30} />}
       </div>
 
       <div style={{ padding: 10, display: "flex", flexDirection: "column", gap: 2, flex: 1, minHeight: 0, overflowY: "auto" }}>
@@ -1178,7 +1178,7 @@ export default function App() {
               <Icon size={15} style={{ flexShrink: 0 }} />
               {showLabels && <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{n.label}</span>}
               {showLabels && n.key === "sync" && pending.length > 0 && (
-                <span style={{ marginLeft: "auto", background: COLOR.red, color: "#fff", borderRadius: 99, fontSize: 10, padding: "1px 6px", fontFamily: FONT_MONO }}>
+                <span style={{ marginLeft: "auto", background: COLOR.red, color: "#fff", borderRadius: 99, fontSize: 10, padding: "1px 6px", fontFamily: FONT_BODY }}>
                   {pending.length}
                 </span>
               )}
@@ -1191,9 +1191,9 @@ export default function App() {
         {showLabels ? (
           <>
             <div style={{ fontSize: 12, fontWeight: 600 }}>{usuario.nome}</div>
-            <div style={{ fontFamily: FONT_MONO, fontSize: 10, color: COLOR.textDim, marginBottom: 3 }}>{usuario.matricula}</div>
+            <div style={{ fontFamily: FONT_BODY, fontSize: 10, color: COLOR.textDim, marginBottom: 3 }}>{usuario.matricula}</div>
             <div style={{ marginBottom: 10 }}>
-              <span style={{ fontFamily: FONT_MONO, fontSize: 9.5, padding: "1px 7px", borderRadius: 99, background: roleColor(usuario.papel).bg, color: roleColor(usuario.papel).fg }}>{rotuloPapel(usuario.papel).toUpperCase()}</span>
+              <span style={{ fontFamily: FONT_BODY, fontSize: 9.5, padding: "1px 7px", borderRadius: 99, background: roleColor(usuario.papel).bg, color: roleColor(usuario.papel).fg }}>{rotuloPapel(usuario.papel)}</span>
             </div>
             <Btn variant="ghost" small full onClick={sair}><LogOut size={13} />Sair</Btn>
           </>
@@ -1259,7 +1259,7 @@ export default function App() {
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: FONT_MONO, fontSize: 11, color: COLOR.textDim, whiteSpace: "nowrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: FONT_BODY, fontSize: 11, color: COLOR.textDim, whiteSpace: "nowrap" }}>
               <Clock size={12} /> Sinc.: {fmtShort(lastSync)}
             </div>
             <button
@@ -1269,11 +1269,11 @@ export default function App() {
                 display: "flex", alignItems: "center", gap: 6, padding: "5px 11px", borderRadius: 99,
                 border: `1px solid ${online ? COLOR.greenLine : COLOR.amberLine}`,
                 background: online ? COLOR.greenTint : COLOR.amberTint,
-                color: online ? COLOR.green : COLOR.amber, fontFamily: FONT_MONO, fontSize: 11, cursor: "pointer", whiteSpace: "nowrap",
+                color: online ? COLOR.green : COLOR.amber, fontFamily: FONT_BODY, fontSize: 11, cursor: "pointer", whiteSpace: "nowrap",
               }}
             >
               {online ? <Wifi size={12} /> : <WifiOff size={12} />}
-              {online ? "ONLINE" : "OFFLINE"}
+              {online ? "Online" : "Offline"}
             </button>
           </div>
         </div>
@@ -1388,7 +1388,7 @@ function OperacaoTab({ online, onNovoRegistro, records }) {
                 borderRadius: 4, border: `1px solid ${COLOR.line}`, background: COLOR.panelAlt, color: COLOR.text, cursor: "pointer",
               }}>
                 <Icon size={18} color={scanning === t.key ? COLOR.red : COLOR.textDim} />
-                <span style={{ fontFamily: FONT_MONO, fontSize: 10.5 }}>{scanning === t.key ? "LENDO…" : t.label}</span>
+                <span style={{ fontFamily: FONT_BODY, fontSize: 10.5 }}>{scanning === t.key ? "LENDO…" : t.label}</span>
               </button>
             );
           })}
@@ -1397,14 +1397,14 @@ function OperacaoTab({ online, onNovoRegistro, records }) {
             borderRadius: 4, border: `1px solid ${COLOR.line}`, background: COLOR.panelAlt, color: COLOR.text, cursor: "pointer",
           }}>
             <ImageIcon size={18} color={scanning === "qr" ? COLOR.red : COLOR.textDim} />
-            <span style={{ fontFamily: FONT_MONO, fontSize: 10.5, textAlign: "center" }}>{scanning === "qr" ? "LENDO…" : "QR · Galeria/Upload"}</span>
+            <span style={{ fontFamily: FONT_BODY, fontSize: 10.5, textAlign: "center" }}>{scanning === "qr" ? "LENDO…" : "QR · Galeria/Upload"}</span>
           </button>
           <button onClick={() => cameraInputRef.current?.click()} style={{
             flex: "1 1 90px", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "14px 8px",
             borderRadius: 4, border: `1px solid ${COLOR.line}`, background: COLOR.panelAlt, color: COLOR.text, cursor: "pointer",
           }}>
             <Camera size={18} color={scanning === "qr" ? COLOR.red : COLOR.textDim} />
-            <span style={{ fontFamily: FONT_MONO, fontSize: 10.5, textAlign: "center" }}>{scanning === "qr" ? "LENDO…" : "QR · Câmera"}</span>
+            <span style={{ fontFamily: FONT_BODY, fontSize: 10.5, textAlign: "center" }}>{scanning === "qr" ? "LENDO…" : "QR · Câmera"}</span>
           </button>
           <input ref={galleryInputRef} type="file" accept="image/*" onChange={(e) => lerQrDeImagem(e, "galeria")} style={{ display: "none" }} />
           <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={(e) => lerQrDeImagem(e, "camera")} style={{ display: "none" }} />
@@ -1420,8 +1420,8 @@ function OperacaoTab({ online, onNovoRegistro, records }) {
             )}
             {!tagLida.imagemUrl && <CheckCircle2 size={15} color={COLOR.green} style={{ flexShrink: 0 }} />}
             <div style={{ fontSize: 12.5 }}>
-              Tag <span style={{ fontFamily: FONT_MONO, color: COLOR.green }}>{tagLida.codigo}</span> lida — {tagLida.item.nome}
-              {tagLida.arquivo && <div style={{ fontFamily: FONT_MONO, fontSize: 10, color: COLOR.textFaint, marginTop: 2 }}>via {tagLida.origem === "camera" ? "câmera" : "galeria/upload"} · {tagLida.arquivo}</div>}
+              Tag <span style={{ fontFamily: FONT_BODY, color: COLOR.green }}>{tagLida.codigo}</span> lida — {tagLida.item.nome}
+              {tagLida.arquivo && <div style={{ fontFamily: FONT_BODY, fontSize: 10, color: COLOR.textFaint, marginTop: 2 }}>via {tagLida.origem === "camera" ? "câmera" : "galeria/upload"} · {tagLida.arquivo}</div>}
             </div>
           </div>
         ) : (
@@ -1447,18 +1447,18 @@ function OperacaoTab({ online, onNovoRegistro, records }) {
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 100px", gap: 10, marginBottom: 10 }}>
           <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <Label>ITEM</Label>
+            <Label>Item</Label>
             <select value={itemId} onChange={(e) => setItemId(e.target.value)} style={selectStyle}>
               {ITENS.map((i) => <option key={i.id} value={i.id}>{i.nome} · {i.id}</option>)}
             </select>
           </label>
           <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <Label>QTD.</Label>
-            <input type="number" min={1} value={quantidade} onChange={(e) => setQuantidade(e.target.value)} style={{ ...selectStyle, fontFamily: FONT_MONO }} />
+            <Label>Qtd.</Label>
+            <input type="number" min={1} value={quantidade} onChange={(e) => setQuantidade(e.target.value)} style={{ ...selectStyle, fontFamily: FONT_BODY }} />
           </label>
         </div>
         <label style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
-          <Label>OBSERVAÇÃO {tipo === "ocorrencia" ? "(descreva a falha/dano)" : "(opcional)"}</Label>
+          <Label>Observação {tipo === "ocorrencia" ? "(descreva a falha/dano)" : "(opcional)"}</Label>
           <textarea value={obs} onChange={(e) => setObs(e.target.value)} rows={2} style={{ ...selectStyle, resize: "vertical", fontFamily: FONT_BODY }} />
         </label>
 
@@ -1478,9 +1478,9 @@ function OperacaoTab({ online, onNovoRegistro, records }) {
               <div key={r.id} style={{ display: "flex", justifyContent: "space-between", gap: 10, padding: "9px 11px", background: COLOR.panelAlt, borderRadius: 4, border: `1px solid ${COLOR.line}` }}>
                 <div>
                   <div style={{ fontSize: 12.5 }}>{r.tipoLabel} · {r.itemNome}</div>
-                  <div style={{ fontFamily: FONT_MONO, fontSize: 10, color: COLOR.textDim }}>{r.setor} · qtd {r.quantidade} · {fmtShort(r.time)}</div>
+                  <div style={{ fontFamily: FONT_BODY, fontSize: 10, color: COLOR.textDim }}>{r.setor} · qtd {r.quantidade} · {fmtShort(r.time)}</div>
                 </div>
-                <span style={{ fontFamily: FONT_MONO, fontSize: 9.5, color: COLOR.textFaint, alignSelf: "center" }}>{r.tag}</span>
+                <span style={{ fontFamily: FONT_BODY, fontSize: 9.5, color: COLOR.textFaint, alignSelf: "center" }}>{r.tag}</span>
               </div>
             ))}
           </div>
@@ -1592,7 +1592,7 @@ function DashboardTab({ records, pending, logs, alerts, online }) {
               <div key={a.id} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "9px 11px", background: COLOR.panelAlt, borderRadius: 4, border: `1px solid ${COLOR.line}` }}>
                 {a.level === "warn" ? <AlertTriangle size={14} color={COLOR.amber} style={{ marginTop: 1 }} /> : <CheckCircle2 size={14} color={COLOR.green} style={{ marginTop: 1 }} />}
                 <div style={{ flex: 1, fontSize: 12.5 }}>{a.text}</div>
-                <span style={{ fontFamily: FONT_MONO, fontSize: 10, color: COLOR.textFaint, whiteSpace: "nowrap" }}>{a.quando}</span>
+                <span style={{ fontFamily: FONT_BODY, fontSize: 10, color: COLOR.textFaint, whiteSpace: "nowrap" }}>{a.quando}</span>
               </div>
             ))}
           </div>
@@ -1646,7 +1646,7 @@ function DataModal({ onClose, records, pending, logs }) {
               padding: "7px 12px", borderRadius: "4px 4px 0 0", border: "none", cursor: "pointer",
               background: tab === t.key ? COLOR.panelAlt : "transparent",
               borderBottom: tab === t.key ? `2px solid ${COLOR.red}` : "2px solid transparent",
-              color: tab === t.key ? COLOR.red : COLOR.textDim, fontSize: 12, fontFamily: FONT_MONO,
+              color: tab === t.key ? COLOR.red : COLOR.textDim, fontSize: 12, fontFamily: FONT_BODY,
             }}>{t.label}</button>
           ))}
         </div>
@@ -1740,9 +1740,9 @@ function ApiTab({ online }) {
           <SectionTitle icon={Plug} title="Configuração da conexão" sub="Estes campos ainda não estão ligados a nenhum backend real — são o ponto onde a integração entra depois" />
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <Label>URL BASE DA API</Label>
+              <Label>URL base da API</Label>
               <div style={{ display: "flex", gap: 6 }}>
-                <input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} style={{ ...selectStyle, flex: 1, fontFamily: FONT_MONO, fontSize: 12 }} />
+                <input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} style={{ ...selectStyle, flex: 1, fontFamily: FONT_BODY, fontSize: 12 }} />
                 <button onClick={copiarUrl} title="Copiar" style={{ background: COLOR.panelAlt, border: `1px solid ${COLOR.line}`, borderRadius: 4, padding: "0 10px", cursor: "pointer", color: COLOR.textDim }}>
                   <Copy size={14} />
                 </button>
@@ -1751,7 +1751,7 @@ function ApiTab({ online }) {
             </label>
 
             <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <Label>AMBIENTE</Label>
+              <Label>Ambiente</Label>
               <select value={ambiente} onChange={(e) => setAmbiente(e.target.value)} style={selectStyle}>
                 <option value="local">Local (desenvolvimento)</option>
                 <option value="homologacao">Homologação</option>
@@ -1760,14 +1760,14 @@ function ApiTab({ online }) {
             </label>
 
             <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <Label>CLIENT ID / API KEY</Label>
+              <Label>Client ID / API key</Label>
               <div style={{ display: "flex", gap: 6 }}>
                 <input
                   type={mostrarChave ? "text" : "password"}
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
                   placeholder="cole aqui a chave gerada pelo backend"
-                  style={{ ...selectStyle, flex: 1, fontFamily: FONT_MONO, fontSize: 12 }}
+                  style={{ ...selectStyle, flex: 1, fontFamily: FONT_BODY, fontSize: 12 }}
                   autoComplete="off"
                 />
                 <button onClick={() => setMostrarChave((v) => !v)} title={mostrarChave ? "Ocultar" : "Mostrar"} style={{ background: COLOR.panelAlt, border: `1px solid ${COLOR.line}`, borderRadius: 4, padding: "0 10px", cursor: "pointer", color: COLOR.textDim }}>
@@ -1802,7 +1802,7 @@ function ApiTab({ online }) {
           <ol style={{ margin: 0, paddingLeft: 18, fontSize: 12.5, color: COLOR.textDim, lineHeight: 1.9 }}>
             <li>Suba a API (Firebase Functions, Node, Python/Flask ou Java/Spring) — nunca sirva segredos direto do front-end.</li>
             <li>Preencha a URL base e a chave acima só para testes locais.</li>
-            <li>Troque as funções <code style={{ fontFamily: FONT_MONO, background: COLOR.panelAlt, padding: "1px 5px", borderRadius: 3 }}>handleNovoRegistro</code> e <code style={{ fontFamily: FONT_MONO, background: COLOR.panelAlt, padding: "1px 5px", borderRadius: 3 }}>handleSincronizarAgora</code>, em <code style={{ fontFamily: FONT_MONO, background: COLOR.panelAlt, padding: "1px 5px", borderRadius: 3 }}>App.jsx</code>, por chamadas <code style={{ fontFamily: FONT_MONO, background: COLOR.panelAlt, padding: "1px 5px", borderRadius: 3 }}>fetch</code> para os endpoints ao lado.</li>
+            <li>Troque as funções <code style={{ fontFamily: FONT_BODY, background: COLOR.panelAlt, padding: "1px 5px", borderRadius: 3 }}>handleNovoRegistro</code> e <code style={{ fontFamily: FONT_BODY, background: COLOR.panelAlt, padding: "1px 5px", borderRadius: 3 }}>handleSincronizarAgora</code>, em <code style={{ fontFamily: FONT_BODY, background: COLOR.panelAlt, padding: "1px 5px", borderRadius: 3 }}>App.jsx</code>, por chamadas <code style={{ fontFamily: FONT_BODY, background: COLOR.panelAlt, padding: "1px 5px", borderRadius: 3 }}>fetch</code> para os endpoints ao lado.</li>
             <li>O restante da interface (telas, estados de loading, fila offline) já está pronto e não precisa mudar.</li>
           </ol>
         </Panel>
@@ -1910,15 +1910,15 @@ function InviteSection() {
       <SectionTitle icon={Mail} title="Convidar por e-mail" sub="Convide uma pessoa por e-mail, já com o perfil de acesso escolhido" />
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginBottom: 10 }}>
         <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <Label>NOME</Label>
+          <Label>Nome</Label>
           <input value={nome} onChange={(e) => setNome(e.target.value)} style={selectStyle} placeholder="Nome completo" />
         </label>
         <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <Label>E-MAIL</Label>
+          <Label>E-mail</Label>
           <input value={email} onChange={(e) => setEmail(e.target.value)} style={selectStyle} placeholder="nome@empresa.com" type="email" />
         </label>
         <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <Label>PAPEL</Label>
+          <Label>Papel</Label>
           <select value={papel} onChange={(e) => setPapel(e.target.value)} style={selectStyle}>
             {OPCOES_PAPEL}
           </select>
@@ -1941,10 +1941,10 @@ function InviteSection() {
               <div key={c.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "9px 11px", background: COLOR.panelAlt, borderRadius: 4, border: `1px solid ${COLOR.line}`, flexWrap: "wrap" }}>
                 <div style={{ fontSize: 12.5 }}>
                   {c.nome} <span style={{ color: COLOR.textFaint }}>· {c.email}</span>{" "}
-                  <span style={{ fontFamily: FONT_MONO, fontSize: 9.5, padding: "1px 6px", borderRadius: 99, background: rc.bg, color: rc.fg }}>{rotuloPapel(c.papel).toUpperCase()}</span>
+                  <span style={{ fontFamily: FONT_BODY, fontSize: 9.5, padding: "1px 6px", borderRadius: 99, background: rc.bg, color: rc.fg }}>{rotuloPapel(c.papel)}</span>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontFamily: FONT_MONO, fontSize: 9.5, color: COLOR.textFaint }}>{c.via === "api" ? "enviado via API" : "aberto no e-mail"} · {fmtShort(c.time)}</span>
+                  <span style={{ fontFamily: FONT_BODY, fontSize: 9.5, color: COLOR.textFaint }}>{c.via === "api" ? "enviado via API" : "aberto no e-mail"} · {fmtShort(c.time)}</span>
                   <button onClick={() => copiarLink(c.id, c.link)} title="Copiar link do convite" style={{ background: "none", border: `1px solid ${COLOR.line}`, borderRadius: 4, padding: "4px 8px", cursor: "pointer", color: COLOR.textDim, display: "flex", alignItems: "center", gap: 4, fontSize: 10.5 }}>
                     <Link2 size={12} /> {copiadoId === c.id ? "copiado" : "copiar link"}
                   </button>
@@ -2000,15 +2000,15 @@ function UsersTab() {
         <SectionTitle icon={Users} title="Adicionar usuário" sub="Cadastro e definição do nível de acesso" />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginBottom: 12 }}>
           <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <Label>NOME</Label>
+            <Label>Nome</Label>
             <input value={nome} onChange={(e) => setNome(e.target.value)} style={selectStyle} placeholder="Nome completo" />
           </label>
           <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <Label>USUÁRIO</Label>
+            <Label>Usuário</Label>
             <input value={usuario} onChange={(e) => setUsuario(e.target.value)} style={selectStyle} placeholder="usuario.sobrenome" />
           </label>
           <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <Label>PAPEL</Label>
+            <Label>Papel</Label>
             <select value={papel} onChange={(e) => setPapel(e.target.value)} style={selectStyle}>
               {OPCOES_PAPEL}
             </select>
@@ -2026,7 +2026,7 @@ function UsersTab() {
             <thead>
               <tr>
                 {["Nome", "Usuário", "Papel", "Ações"].map((c) => (
-                  <th key={c} style={{ textAlign: "left", fontFamily: FONT_MONO, fontSize: 10.5, color: COLOR.textDim, padding: "6px 10px", borderBottom: `1px solid ${COLOR.line}`, whiteSpace: "nowrap" }}>{c.toUpperCase()}</th>
+                  <th key={c} style={{ textAlign: "left", fontFamily: FONT_BODY, fontSize: 10.5, color: COLOR.textDim, padding: "6px 10px", borderBottom: `1px solid ${COLOR.line}`, whiteSpace: "nowrap" }}>{c}</th>
                 ))}
               </tr>
             </thead>
@@ -2036,7 +2036,7 @@ function UsersTab() {
                 return (
                   <tr key={u.id} style={{ background: i % 2 ? COLOR.panelAlt : "transparent" }}>
                     <td style={{ padding: "7px 10px", fontSize: 12.5, borderBottom: `1px solid ${COLOR.line}`, whiteSpace: "nowrap" }}>{u.nome}</td>
-                    <td style={{ padding: "7px 10px", fontSize: 12.5, borderBottom: `1px solid ${COLOR.line}`, fontFamily: FONT_MONO, whiteSpace: "nowrap" }}>{u.usuario}</td>
+                    <td style={{ padding: "7px 10px", fontSize: 12.5, borderBottom: `1px solid ${COLOR.line}`, fontFamily: FONT_BODY, whiteSpace: "nowrap" }}>{u.usuario}</td>
                     <td style={{ padding: "7px 10px", borderBottom: `1px solid ${COLOR.line}` }}>
                       <select value={u.papel} onChange={(e) => mudarPapel(u.id, e.target.value)} style={{ ...selectStyle, padding: "4px 8px", fontSize: 11.5, background: rc.bg, color: rc.fg, border: `1px solid ${rc.fg}33` }}>
                         {OPCOES_PAPEL}
@@ -2100,24 +2100,24 @@ function ChamadosTab({ usuario }) {
         <SectionTitle icon={LifeBuoy} title="Abrir chamado" sub="Encontrou um erro ou tem uma dúvida sobre o sistema? Registre aqui" />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10, marginBottom: 10 }}>
           <label style={{ display: "flex", flexDirection: "column", gap: 6, gridColumn: "1 / -1" }}>
-            <Label>TÍTULO</Label>
+            <Label>Título</Label>
             <input value={titulo} onChange={(e) => setTitulo(e.target.value)} style={selectStyle} placeholder="Resuma o problema em uma frase" />
           </label>
           <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <Label>CATEGORIA</Label>
+            <Label>Categoria</Label>
             <select value={categoria} onChange={(e) => setCategoria(e.target.value)} style={selectStyle}>
               {CATEGORIAS.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </label>
           <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <Label>PRIORIDADE</Label>
+            <Label>Prioridade</Label>
             <select value={prioridade} onChange={(e) => setPrioridade(e.target.value)} style={selectStyle}>
               {PRIORIDADES.map((p) => <option key={p} value={p}>{p}</option>)}
             </select>
           </label>
         </div>
         <label style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 14 }}>
-          <Label>DESCRIÇÃO</Label>
+          <Label>Descrição</Label>
           <textarea value={descricao} onChange={(e) => setDescricao(e.target.value)} rows={3} style={{ ...selectStyle, resize: "vertical", fontFamily: FONT_BODY }} placeholder="O que aconteceu, em que tela, e o que você esperava que acontecesse" />
         </label>
         <Btn onClick={abrirChamado}><Send size={14} /> Abrir chamado</Btn>
@@ -2132,13 +2132,13 @@ function ChamadosTab({ usuario }) {
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
                   <div style={{ fontSize: 12.5, fontWeight: 600 }}>{t.titulo}</div>
                   <div style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
-                    <span style={{ fontFamily: FONT_MONO, fontSize: 9.5, padding: "2px 7px", borderRadius: 99, background: `${priorityColor(t.prioridade)}22`, color: priorityColor(t.prioridade) }}>{t.prioridade.toUpperCase()}</span>
-                    <span style={{ fontFamily: FONT_MONO, fontSize: 9.5, padding: "2px 7px", borderRadius: 99, background: t.status === "Resolvido" ? COLOR.greenTint : COLOR.amberTint, color: t.status === "Resolvido" ? COLOR.green : COLOR.amber }}>{t.status.toUpperCase()}</span>
+                    <span style={{ fontFamily: FONT_BODY, fontSize: 9.5, padding: "2px 7px", borderRadius: 99, background: `${priorityColor(t.prioridade)}22`, color: priorityColor(t.prioridade) }}>{t.prioridade.toUpperCase()}</span>
+                    <span style={{ fontFamily: FONT_BODY, fontSize: 9.5, padding: "2px 7px", borderRadius: 99, background: t.status === "Resolvido" ? COLOR.greenTint : COLOR.amberTint, color: t.status === "Resolvido" ? COLOR.green : COLOR.amber }}>{t.status.toUpperCase()}</span>
                   </div>
                 </div>
                 {t.descricao && <div style={{ fontSize: 12, color: COLOR.textDim, marginTop: 6 }}>{t.descricao}</div>}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8, flexWrap: "wrap", gap: 6 }}>
-                  <span style={{ fontFamily: FONT_MONO, fontSize: 10, color: COLOR.textFaint }}>{t.categoria} · {t.autor} · {fmtShort(t.time)}</span>
+                  <span style={{ fontFamily: FONT_BODY, fontSize: 10, color: COLOR.textFaint }}>{t.categoria} · {t.autor} · {fmtShort(t.time)}</span>
                   {t.status !== "Resolvido" && <Btn small variant="ghost" onClick={() => resolver(t.id)}>Marcar como resolvido</Btn>}
                 </div>
               </div>
@@ -2166,11 +2166,11 @@ function SyncTab({ online, pending, lastSync, onSync, credExpiresAt, credHoursLe
           sub={online ? "Envio direto via API para o banco de dados" : "Dados armazenados localmente com credenciais em cache (48h)"} />
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, marginBottom: 8 }}>
           <span style={{ color: COLOR.textDim }}>Última atualização</span>
-          <span style={{ fontFamily: FONT_MONO }}>{fmtTime(lastSync)}</span>
+          <span style={{ fontFamily: FONT_BODY }}>{fmtTime(lastSync)}</span>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, marginBottom: 16 }}>
           <span style={{ color: COLOR.textDim }}>Status</span>
-          <span style={{ fontFamily: FONT_MONO, color: pending.length ? COLOR.amber : COLOR.green }}>
+          <span style={{ fontFamily: FONT_BODY, color: pending.length ? COLOR.amber : COLOR.green }}>
             {pending.length ? "DESATUALIZADO" : "ATUALIZADO"}
           </span>
         </div>
@@ -2184,7 +2184,7 @@ function SyncTab({ online, pending, lastSync, onSync, credExpiresAt, credHoursLe
         <SectionTitle icon={KeyRound} title="Credenciais de sessão" sub="Client ID + Client Secret · validade 48h" />
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, marginBottom: 8 }}>
           <span style={{ color: COLOR.textDim }}>Expira em</span>
-          <span style={{ fontFamily: FONT_MONO, color: credWarn ? COLOR.red : COLOR.text }}>{credExpiresAt.toLocaleString("pt-BR")}</span>
+          <span style={{ fontFamily: FONT_BODY, color: credWarn ? COLOR.red : COLOR.text }}>{credExpiresAt.toLocaleString("pt-BR")}</span>
         </div>
         <div style={{ height: 6, background: COLOR.panelAlt, borderRadius: 99, overflow: "hidden", marginBottom: 10 }}>
           <div style={{ height: "100%", width: `${Math.min(100, (credHoursLeft / 48) * 100)}%`, background: credWarn ? COLOR.red : COLOR.blue, transition: "width .4s" }} />
@@ -2201,7 +2201,7 @@ function SyncTab({ online, pending, lastSync, onSync, credExpiresAt, credHoursLe
             {pending.map((p) => (
               <div key={p.id} style={{ display: "flex", justifyContent: "space-between", padding: "9px 11px", background: COLOR.panelAlt, borderRadius: 4, border: `1px solid ${COLOR.line}` }}>
                 <span style={{ fontSize: 12.5 }}>{p.tipoLabel} · {p.itemNome}</span>
-                <span style={{ fontFamily: FONT_MONO, fontSize: 10, color: COLOR.amber }}>aguardando envio</span>
+                <span style={{ fontFamily: FONT_BODY, fontSize: 10, color: COLOR.amber }}>aguardando envio</span>
               </div>
             ))}
           </div>
@@ -2229,9 +2229,9 @@ function LogsTab({ logs }) {
               {l.status === "warn" ? <AlertTriangle size={13} color={COLOR.amber} style={{ marginTop: 2 }} /> : <CheckCircle2 size={13} color={COLOR.green} style={{ marginTop: 2 }} />}
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 12.5 }}>{l.acao}</div>
-                <div style={{ fontFamily: FONT_MONO, fontSize: 10, color: COLOR.textFaint }}>{l.ator}</div>
+                <div style={{ fontFamily: FONT_BODY, fontSize: 10, color: COLOR.textFaint }}>{l.ator}</div>
               </div>
-              <span style={{ fontFamily: FONT_MONO, fontSize: 10.5, color: COLOR.textDim }}>{fmtTime(l.time)}</span>
+              <span style={{ fontFamily: FONT_BODY, fontSize: 10.5, color: COLOR.textDim }}>{fmtTime(l.time)}</span>
             </div>
           ))}
         </div>

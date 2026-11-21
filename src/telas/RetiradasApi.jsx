@@ -94,11 +94,11 @@ export function RetiradasApi({ usuario, onLog }) {
         filtros={
           <>
             <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <Label>DE</Label>
+              <Label>De</Label>
               <input type="date" value={de} onChange={(e) => setDe(e.target.value)} style={selectStyle} />
             </label>
             <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <Label>ATÉ</Label>
+              <Label>Até</Label>
               <input type="date" value={ate} onChange={(e) => setAte(e.target.value)} style={selectStyle} />
             </label>
             {(de || ate) && (

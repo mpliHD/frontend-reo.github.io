@@ -56,7 +56,7 @@ export function LogsApi({ onLog }) {
               {Object.entries(ACAO_LOG).map(([v, r]) => <option key={v} value={v}>{r}</option>)}
             </select>
             <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <Label>DESDE</Label>
+              <Label>Desde</Label>
               <input type="date" value={de} onChange={(e) => setDe(e.target.value)} style={selectStyle} />
             </label>
             {(entidade || acao || de) && (

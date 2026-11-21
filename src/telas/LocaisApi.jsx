@@ -61,18 +61,18 @@ function FormLocal({ inicial, patios, aoSalvar, aoCancelar, onLog }) {
       <SectionTitle icon={editando ? Pencil : Plus} title={editando ? `Editar ${form.name || "local"}` : "Novo local"} sub="Pátio/armazém ou rua dentro de um pátio; coordenadas são opcionais" />
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, marginBottom: 12 }}>
         <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <Label>NOME</Label>
+          <Label>Nome</Label>
           <input value={form.name} onChange={mudar("name")} placeholder="Rua 10" style={selectStyle} />
         </label>
         <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <Label>TIPO</Label>
+          <Label>Tipo</Label>
           <select value={form.kind} onChange={mudar("kind")} disabled={editando} style={{ ...selectStyle, opacity: editando ? 0.6 : 1 }}>
             {Object.entries(TIPO_LOCAL).map(([v, r]) => <option key={v} value={v}>{r}</option>)}
           </select>
         </label>
         {form.kind === "street" && (
           <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <Label>PÁTIO</Label>
+            <Label>Pátio</Label>
             <select value={form.parent_id} onChange={mudar("parent_id")} disabled={editando} style={{ ...selectStyle, opacity: editando ? 0.6 : 1 }}>
               <option value="">Escolha…</option>
               {patios.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -80,11 +80,11 @@ function FormLocal({ inicial, patios, aoSalvar, aoCancelar, onLog }) {
           </label>
         )}
         <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <Label>LATITUDE</Label>
+          <Label>Latitude</Label>
           <input value={form.latitude} onChange={mudar("latitude")} placeholder="-23,5275" style={selectStyle} inputMode="decimal" />
         </label>
         <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <Label>LONGITUDE</Label>
+          <Label>Longitude</Label>
           <input value={form.longitude} onChange={mudar("longitude")} placeholder="-46,6650" style={selectStyle} inputMode="decimal" />
         </label>
       </div>

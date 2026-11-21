@@ -8,7 +8,7 @@ import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAx
 import { Activity, AlertTriangle, ClipboardList, Clock, LayoutDashboard, Loader2, Server, Timer, Warehouse, XCircle } from "lucide-react";
 import { api } from "../api/index.js";
 import { STATUS_DORMENTE, TIPO_OCORRENCIA, duracao, rotulo } from "../rotulos.js";
-import { COLOR, EmptyState, FONT_DISPLAY, FONT_MONO, Panel, SectionTitle, SignalDot, selectStyle } from "../ui.jsx";
+import { COLOR, EmptyState, FONT_DISPLAY, FONT_BODY, Panel, SectionTitle, SignalDot, selectStyle } from "../ui.jsx";
 import { mensagemErro } from "./TabelaApi.jsx";
 
 const PERIODOS = [
@@ -77,7 +77,7 @@ function SaudeApi() {
             <SignalDot status={l.status} />
             <div>
               <div style={{ fontSize: 12.5 }}>{l.label}</div>
-              <div style={{ fontFamily: FONT_MONO, fontSize: 10.5, color: COLOR.textFaint }}>{l.detail}</div>
+              <div style={{ fontFamily: FONT_BODY, fontSize: 10.5, color: COLOR.textFaint }}>{l.detail}</div>
             </div>
           </div>
         ))}
@@ -207,7 +207,7 @@ export function PainelApi() {
             <SaudeApi />
             <Panel>
               <SectionTitle icon={Clock} title="Período consultado" />
-              <div style={{ fontFamily: FONT_MONO, fontSize: 11.5, color: COLOR.textDim, lineHeight: 1.8 }}>
+              <div style={{ fontFamily: FONT_BODY, fontSize: 11.5, color: COLOR.textDim, lineHeight: 1.8 }}>
                 de {new Date(ind.period.start).toLocaleString("pt-BR")}<br />
                 até {new Date(ind.period.end).toLocaleString("pt-BR")}
               </div>

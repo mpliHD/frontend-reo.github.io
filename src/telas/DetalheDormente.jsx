@@ -12,7 +12,7 @@ import {
   CONSERVACAO, RESULTADO_INSPECAO, STATUS_DORMENTE, TIPO_MOVIMENTO, TIPO_OCORRENCIA, UMIDADE,
   duracao, nomeEspecie, nomeLocal, rotulo, tomStatus,
 } from "../rotulos.js";
-import { COLOR, FONT_DISPLAY, FONT_MONO, Label, Selo } from "../ui.jsx";
+import { COLOR, FONT_DISPLAY, FONT_BODY, Label, Selo } from "../ui.jsx";
 import { mensagemErro } from "./TabelaApi.jsx";
 
 const ICONE = { movement: ArrowRightLeft, inspection: ClipboardList, occurrence: AlertTriangle };
@@ -20,7 +20,7 @@ const ICONE = { movement: ArrowRightLeft, inspection: ClipboardList, occurrence:
 function Dado({ rotulo: r, valor }) {
   return (
     <div>
-      <Label>{r.toUpperCase()}</Label>
+      <Label>{r}</Label>
       <div style={{ fontSize: 13, marginTop: 3, color: valor ? COLOR.text : COLOR.textFaint }}>{valor || "—"}</div>
     </div>
   );
@@ -103,8 +103,8 @@ export function DetalheDormente({ id, usuario, onClose }) {
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, marginBottom: 18 }}>
           <div style={{ minWidth: 0 }}>
-            <Label>DORMENTE</Label>
-            <div style={{ fontFamily: FONT_MONO, fontSize: 15, fontWeight: 600, marginTop: 4, wordBreak: "break-all" }}>{d?.rfid_tag ?? "…"}</div>
+            <Label>Dormente</Label>
+            <div style={{ fontFamily: FONT_BODY, fontSize: 15, fontWeight: 600, marginTop: 4, wordBreak: "break-all" }}>{d?.rfid_tag ?? "…"}</div>
             {d && <div style={{ marginTop: 8 }}><Selo texto={rotulo(STATUS_DORMENTE, d.status)} tom={tomStatus(d.status)} /></div>}
           </div>
           <button onClick={onClose} title="Fechar" style={{ background: "none", border: "none", cursor: "pointer", color: COLOR.textDim, display: "flex", padding: 4 }}>
@@ -146,7 +146,7 @@ export function DetalheDormente({ id, usuario, onClose }) {
                     <div style={{ minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                         <span style={{ fontSize: 12.5, fontWeight: 600 }}>{t.titulo}</span>
-                        <span style={{ fontFamily: FONT_MONO, fontSize: 10.5, color: COLOR.textFaint }}>{new Date(item.occurred_at).toLocaleString("pt-BR")}</span>
+                        <span style={{ fontFamily: FONT_BODY, fontSize: 10.5, color: COLOR.textFaint }}>{new Date(item.occurred_at).toLocaleString("pt-BR")}</span>
                       </div>
                       <div style={{ fontSize: 12, color: COLOR.textDim, marginTop: 3, lineHeight: 1.5 }}>{t.detalhes.join(" · ")}</div>
                     </div>
