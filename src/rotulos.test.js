@@ -1,6 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { STATUS_DORMENTE, data, duracao, nomeEspecie, nomeLocal, rotulo, simNao, tomStatus } from "./rotulos.js";
+import {
+  STATUS_DORMENTE, data, duracao, movimentosPossiveis, nomeEspecie, nomeLocal, rotulo, simNao, statusManuaisDe, tomStatus,
+} from "./rotulos.js";
 
 test("sim/não e duração, com vazio para não informado", () => {
   assert.equal(simNao(true), "Sim");
@@ -36,4 +38,20 @@ test("nome do local com o pátio na frente", () => {
 test("data ISO vira Date; vazio vira null", () => {
   assert.equal(data("2026-10-21T18:30:00Z").toISOString(), "2026-10-21T18:30:00.000Z");
   assert.equal(data(null), null);
+});
+
+test("status que dá para mudar à mão, como na API", () => {
+  assert.deepEqual(statusManuaisDe("in_stock"), ["quarantine", "discarded"]);
+  assert.deepEqual(statusManuaisDe("quarantine"), ["in_stock", "discarded"]);
+  assert.deepEqual(statusManuaisDe("withdrawn"), ["in_track", "discarded"]);
+  assert.deepEqual(statusManuaisDe("in_track"), ["discarded"]);
+  assert.deepEqual(statusManuaisDe("discarded"), []);
+});
+
+test("movimentações possíveis conforme status e local", () => {
+  const local = { id: "r", name: "Rua 08" };
+  assert.deepEqual(movimentosPossiveis({ status: "withdrawn", current_location: null }), ["entry"]);
+  assert.deepEqual(movimentosPossiveis({ status: "in_stock", current_location: local }), ["transfer", "withdrawal"]);
+  assert.deepEqual(movimentosPossiveis({ status: "quarantine", current_location: local }), ["transfer"]);
+  assert.deepEqual(movimentosPossiveis({ status: "discarded", current_location: local }), []);
 });

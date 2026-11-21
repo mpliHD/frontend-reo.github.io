@@ -48,6 +48,11 @@ API (`{detail, code}`) em `ErroApi`. Os tokens ficam no `sessionStorage`
 |---|---|---|
 | Dormentes | `GET /dormentes` (um por tag RFID; filtros de status, espécie, local e busca por tag/ata) | todos |
 | Detalhe do dormente (clique na linha) | `GET /dormentes/{id}/historico` (movimentações, inspeções e ocorrências) | todos |
+| Cadastrar dormente (botão em Dormentes) | `POST /dormentes` (já registra a entrada no local) | operador, técnico, especialista, admin |
+| Detalhe → Editar | `PATCH /dormentes/{id}` (espécie: especialista/admin; status manual: técnico+) | operador, técnico, especialista, admin |
+| Detalhe → Movimentar | `POST /estoque/movimentacao` (entrada, transferência, retirada com RM) | operador, técnico, especialista, admin |
+| Detalhe → Inspecionar | `POST /inspecoes` (reprovada põe em quarentena) | técnico, especialista, admin |
+| Detalhe → Ocorrência | `POST /estoque/ocorrencias` | operador, técnico, especialista, admin |
 | Retiradas (RM) | `GET /estoque/movimentacoes?kind=withdrawal` + nomes de `/locais`, `/dormentes/{id}` e `/usuarios` | todos (responsável só para supervisor/admin) |
 | Inspeções | `GET /inspecoes` (checklist e resultado; filtros de resultado e período) | todos (inspetor só para supervisor/admin) |
 | Espécies de Madeira | `GET /especies`; `POST/PATCH /especies` | todos; edição por especialista e admin |
@@ -55,6 +60,9 @@ API (`{detail, code}`) em `ErroApi`. Os tokens ficam no `sessionStorage`
 | Painel de Monitoramento | `GET /indicadores` e `GET /monitoramento/status` | supervisor, admin |
 | Usuários & Permissões | `GET/POST /usuarios`, `PATCH /usuarios/{id}/papel`, `POST /usuarios/convite` | supervisor (leitura), admin |
 | Logs e Auditoria | `GET /logs` | só admin |
+
+O supervisor só consulta: a API não deixa ele gravar dados de campo. Cada cadastro manda um
+`client_uuid` novo, então um clique duplo ou uma queda de rede não duplica o registro.
 
 A paginação é feita pela API (50 por página) e o "Exportar para Excel" baixa
 todas as páginas do filtro atual. "Dormentes a Chegar" e "Suporte / Chamados"

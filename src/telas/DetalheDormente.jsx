@@ -3,17 +3,20 @@
 // GET /dormentes/{id}/historico devolve movimentações, inspeções e ocorrências
 // já em ordem. Os ids (locais, usuários, espécie corrigida) viram nomes pelos
 // catálogos; o nome de quem fez só aparece para supervisor e admin.
+// Ações (conforme o papel): editar, movimentar, inspecionar e registrar
+// ocorrência; depois de cada uma o histórico é relido e a tela de trás avisada.
 import { useEffect, useState } from "react";
-import { AlertTriangle, ArrowRightLeft, ClipboardList, Loader2, X } from "lucide-react";
+import { AlertTriangle, ArrowRightLeft, ClipboardCheck, ClipboardList, Loader2, Pencil, X } from "lucide-react";
 import { api } from "../api/index.js";
-import { carregarEspecies, carregarLocais, carregarUsuarios } from "../api/catalogos.js";
-import { podeVerAba } from "../papeis.js";
+import { carregarEspecies, carregarLocais, carregarUsuarios, esquecerDormente } from "../api/catalogos.js";
+import { podeInspecionar, podeRegistrarCampo, podeVerAba } from "../papeis.js";
 import {
   CONSERVACAO, RESULTADO_INSPECAO, STATUS_DORMENTE, TIPO_MOVIMENTO, TIPO_OCORRENCIA, UMIDADE,
-  duracao, nomeEspecie, nomeLocal, rotulo, tomStatus,
+  duracao, movimentosPossiveis, nomeEspecie, nomeLocal, rotulo, tomStatus,
 } from "../rotulos.js";
 import { COLOR, FONT_DISPLAY, FONT_BODY, Label, Selo } from "../ui.jsx";
 import { mensagemErro } from "./TabelaApi.jsx";
+import { FormEditarDormente, FormInspecao, FormMovimento, FormOcorrencia } from "./FormsDormente.jsx";
 
 const ICONE = { movement: ArrowRightLeft, inspection: ClipboardList, occurrence: AlertTriangle };
 
@@ -65,10 +68,27 @@ function descrever(item, nomes) {
   };
 }
 
-export function DetalheDormente({ id, usuario, onClose }) {
+const ACOES = [
+  { chave: "editar", rotulo: "Editar", icone: Pencil, Form: FormEditarDormente },
+  { chave: "movimentar", rotulo: "Movimentar", icone: ArrowRightLeft, Form: FormMovimento },
+  { chave: "inspecionar", rotulo: "Inspecionar", icone: ClipboardCheck, Form: FormInspecao },
+  { chave: "ocorrencia", rotulo: "Ocorrência", icone: AlertTriangle, Form: FormOcorrencia },
+];
+
+const MENSAGEM_SALVO = {
+  editar: "Dados do dormente atualizados.",
+  movimentar: "Movimentação registrada.",
+  inspecionar: "Inspeção registrada.",
+  ocorrencia: "Ocorrência registrada.",
+};
+
+export function DetalheDormente({ id, usuario, onClose, onAlterado }) {
   const [hist, setHist] = useState(null);
   const [nomes, setNomes] = useState({ locais: new Map(), usuarios: new Map(), especies: new Map() });
   const [erro, setErro] = useState("");
+  const [acao, setAcao] = useState(null); // chave da ação aberta, ou null
+  const [aviso, setAviso] = useState("");
+  const [versao, setVersao] = useState(0); // muda depois de cada registro: relê o histórico
 
   useEffect(() => {
     let ativo = true;
@@ -82,7 +102,7 @@ export function DetalheDormente({ id, usuario, onClose }) {
       (e) => ativo && setErro(mensagemErro(e)),
     );
     return () => { ativo = false; };
-  }, [id, usuario?.papel]);
+  }, [id, usuario?.papel, versao]);
 
   // Esc fecha a janela.
   useEffect(() => {
@@ -93,13 +113,32 @@ export function DetalheDormente({ id, usuario, onClose }) {
 
   const d = hist?.sleeper;
 
+  // Quais ações este papel pode fazer neste dormente agora.
+  const campo = podeRegistrarCampo(usuario?.papel);
+  const descartado = d?.status === "discarded";
+  const disponivel = {
+    editar: campo,
+    movimentar: campo && movimentosPossiveis(d).length > 0,
+    inspecionar: podeInspecionar(usuario?.papel) && !descartado,
+    ocorrencia: campo,
+  };
+  const acaoAberta = ACOES.find((a) => a.chave === acao);
+
+  function salvou() {
+    setAviso(MENSAGEM_SALVO[acao]);
+    setAcao(null);
+    setVersao((v) => v + 1);
+    esquecerDormente(id);
+    onAlterado?.();
+  }
+
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(15,15,20,.45)", zIndex: 80, display: "flex", justifyContent: "flex-end" }}>
       <div
         role="dialog"
         aria-label="Detalhe do dormente"
         onClick={(e) => e.stopPropagation()}
-        style={{ width: "min(560px, 100%)", height: "100%", background: COLOR.panel, overflowY: "auto", padding: 22, animation: "slide-in .2s ease", boxShadow: "-8px 0 24px rgba(0,0,0,.12)" }}
+        style={{ width: "min(640px, 100%)", height: "100%", background: COLOR.panel, overflowY: "auto", padding: 22, animation: "slide-in .2s ease", boxShadow: "-8px 0 24px rgba(0,0,0,.12)" }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, marginBottom: 18 }}>
           <div style={{ minWidth: 0 }}>
@@ -113,6 +152,32 @@ export function DetalheDormente({ id, usuario, onClose }) {
         </div>
 
         {erro && <div role="alert" style={{ color: COLOR.red, fontSize: 12.5 }}>{erro}</div>}
+        {d && ACOES.some((a) => disponivel[a.chave]) && (
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
+            {ACOES.filter((a) => disponivel[a.chave]).map((a) => {
+              const Icone = a.icone;
+              const ativa = acao === a.chave;
+              return (
+                <button
+                  key={a.chave}
+                  onClick={() => { setAviso(""); setAcao(ativa ? null : a.chave); }}
+                  aria-pressed={ativa}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 4, cursor: "pointer",
+                    border: `1px solid ${ativa ? COLOR.blue : COLOR.line}`, background: ativa ? COLOR.blueTint : COLOR.panel,
+                    color: ativa ? COLOR.blue : COLOR.text, fontSize: 13, fontFamily: FONT_BODY, fontWeight: 500,
+                  }}
+                >
+                  <Icone size={14} /> {a.rotulo}
+                </button>
+              );
+            })}
+          </div>
+        )}
+        {aviso && <div role="status" style={{ background: COLOR.greenTint, border: `1px solid ${COLOR.greenLine}`, color: COLOR.green, borderRadius: 4, padding: "8px 12px", fontSize: 12.5, marginBottom: 14 }}>{aviso}</div>}
+        {d && acaoAberta && (
+          <acaoAberta.Form key={`${acao}-${versao}`} icone={acaoAberta.icone} dormente={d} usuario={usuario} onSalvo={salvou} onCancelar={() => setAcao(null)} />
+        )}
         {!hist && !erro && <div style={{ display: "flex", gap: 8, alignItems: "center", color: COLOR.textDim, fontSize: 12.5 }}><Loader2 size={14} className="spin" /> Carregando histórico…</div>}
 
         {d && (

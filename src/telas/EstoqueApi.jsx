@@ -5,12 +5,14 @@
 // (só o `total` interessa). Assim funciona para qualquer papel; /indicadores
 // seria uma chamada só, mas é restrito a supervisor e admin.
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Ban, Search, Truck, Warehouse, X } from "lucide-react";
+import { AlertTriangle, Ban, Plus, Search, Truck, Warehouse, X } from "lucide-react";
 import { api } from "../api/index.js";
 import { carregarEspecies, carregarLocais } from "../api/catalogos.js";
+import { podeRegistrarCampo } from "../papeis.js";
 import { STATUS_DORMENTE, data, nomeEspecie, nomeLocal, rotulo, tomStatus } from "../rotulos.js";
 import { Btn, COLOR, FONT_DISPLAY, Panel, SectionTitle, selectStyle } from "../ui.jsx";
 import { DetalheDormente } from "./DetalheDormente.jsx";
+import { FormCadastroDormente } from "./FormsDormente.jsx";
 import { TabelaApi, useAtrasado } from "./TabelaApi.jsx";
 
 const INDICADORES = [
@@ -48,6 +50,10 @@ export function EstoqueApi({ usuario, onLog }) {
   const [especies, setEspecies] = useState(new Map());
   const [locais, setLocais] = useState(new Map());
   const [contagens, setContagens] = useState({});
+  const [cadastrando, setCadastrando] = useState(false);
+  const [recarga, setRecarga] = useState(0); // muda depois de cadastrar/editar: relê tabela e contagens
+  const podeCadastrar = podeRegistrarCampo(usuario?.papel);
+  const recarregar = () => setRecarga((n) => n + 1);
 
   useEffect(() => {
     carregarEspecies().then(setEspecies).catch(() => {});
@@ -63,7 +69,7 @@ export function EstoqueApi({ usuario, onLog }) {
       ),
     ).then((pares) => ativo && setContagens(Object.fromEntries(pares)), () => {});
     return () => { ativo = false; };
-  }, [especie, local]);
+  }, [especie, local, recarga]);
 
   const consulta = useMemo(() => ({ status, species_id: especie, location_id: local, q }), [status, especie, local, q]);
   const cols = useMemo(() => colunas(locais), [locais]);
@@ -75,7 +81,18 @@ export function EstoqueApi({ usuario, onLog }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <SectionTitle icon={Warehouse} title="Dormentes" sub="Um dormente por tag RFID, com os dados da plaqueta e o local atual; clique numa linha para ver o histórico" />
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
+        <SectionTitle icon={Warehouse} title="Dormentes" sub="Um dormente por tag RFID, com os dados da plaqueta e o local atual; clique numa linha para ver o histórico, editar, movimentar ou inspecionar" style={{ marginBottom: 0, flex: "1 1 320px" }} />
+        {podeCadastrar && !cadastrando && <Btn onClick={() => setCadastrando(true)}><Plus size={14} /> Cadastrar dormente</Btn>}
+      </div>
+
+      {cadastrando && (
+        <FormCadastroDormente
+          icone={Plus}
+          onCancelar={() => setCadastrando(false)}
+          onCriado={(novo) => { setCadastrando(false); recarregar(); onLog?.(`Dormente cadastrado: ${novo.rfid_tag}`); setDetalhe(novo.id); }}
+        />
+      )}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
         {INDICADORES.map((k) => {
@@ -97,6 +114,7 @@ export function EstoqueApi({ usuario, onLog }) {
         consulta={consulta}
         colunas={cols}
         onLinhaClick={(d) => setDetalhe(d.id)}
+        recarga={recarga}
         vazio="Nenhum dormente encontrado com esses filtros."
         nomeArquivo="dormentes"
         nomeAba="Dormentes"
@@ -134,7 +152,7 @@ export function EstoqueApi({ usuario, onLog }) {
           </>
         }
       />
-      {detalhe && <DetalheDormente id={detalhe} usuario={usuario} onClose={() => setDetalhe(null)} />}
+      {detalhe && <DetalheDormente id={detalhe} usuario={usuario} onClose={() => setDetalhe(null)} onAlterado={recarregar} />}
     </div>
   );
 }

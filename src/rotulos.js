@@ -109,3 +109,25 @@ export function inicioDoDia(texto, somarDias = 0) {
   const [a, m, d] = texto.split("-").map(Number);
   return new Date(a, m - 1, d + somarDias).toISOString();
 }
+
+// Mudança manual de status (PATCH /dormentes/{id}), espelhando MANUAL_TRANSITIONS
+// da API: estoque ↔ quarentena, retirado → na via e qualquer → descartado.
+// Entrada, retirada e transferência são movimentações, não mudança de status.
+const TRANSICOES_MANUAIS = {
+  quarantine: ["in_stock"],
+  in_stock: ["quarantine"],
+  in_track: ["withdrawn"],
+  discarded: ["in_stock", "withdrawn", "in_track", "quarantine"],
+};
+
+export function statusManuaisDe(atual) {
+  return Object.entries(TRANSICOES_MANUAIS).filter(([, de]) => de.includes(atual)).map(([para]) => para);
+}
+
+// Tipos de movimentação possíveis para o dormente agora (regras da API):
+// fora do pátio → só entrada; no pátio → transferência, e retirada se estiver em estoque.
+export function movimentosPossiveis(dormente) {
+  if (!dormente || dormente.status === "discarded") return [];
+  if (!dormente.current_location) return ["entry"];
+  return dormente.status === "in_stock" ? ["transfer", "withdrawal"] : ["transfer"];
+}

@@ -36,6 +36,13 @@ export function podeVerAba(aba, papel) {
 export const podeEditarEspecies = (papel) => papel === "admin" || papel === "especialista";
 export const podeEditarLocais = (papel) => papel === "admin" || papel === "supervisor";
 
+// Registro de dados de campo (cadastrar dormente, movimentar, ocorrência):
+// FIELD_ROLES da API. Supervisor só lê. Inspeção e mudança manual de status:
+// INSPECTION_ROLES. Trocar a espécie de um dormente: SPECIES_ROLES.
+export const podeRegistrarCampo = (papel) => ["admin", "operador", "tecnico", "especialista"].includes(papel);
+export const podeInspecionar = (papel) => ["admin", "tecnico", "especialista"].includes(papel);
+export const podeAlterarEspecieDormente = podeEditarEspecies;
+
 // Converte o usuário da API ({name, registration, role, ...}) para os nomes
 // usados nas telas do site.
 export function usuarioDaApi(u) {
